@@ -1,0 +1,1693 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8"/>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no"/>
+    <title>HIM.CLOTHIERS - Admin Dashboard</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com"/>
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin/>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet"/>
+    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+    <style>
+        :root {
+            --brand-color: #6F4D38;
+            --brand-hover: #5a3f2e;
+            --brand-light: rgba(111, 77, 56, 0.1);
+            --bg-white: #ffffff;
+            --bg-light: #f8f9fa;
+            --bg-card: #ffffff;
+            --text-primary: #1a1a1a;
+            --text-secondary: #6c757d;
+            --text-muted: #adb5bd;
+            --border-color: #e9ecef;
+            --success: #28a745;
+            --warning: #ffc107;
+            --danger: #dc3545;
+            --info: #17a2b8;
+            --sidebar-width: 260px;
+            --header-height: 70px;
+            --radius: 12px;
+            --radius-sm: 8px;
+            --shadow: 0 2px 12px rgba(0,0,0,0.08);
+            --shadow-lg: 0 8px 30px rgba(0,0,0,0.12);
+        }
+        * { margin: 0; padding: 0; box-sizing: border-box; -webkit-tap-highlight-color: transparent; }
+        html { font-size: 16px; }
+        body { 
+            font-family: 'Inter', -apple-system, BlinkMacSystemFont, sans-serif; 
+            background: var(--bg-light); 
+            color: var(--text-primary); 
+            line-height: 1.6; 
+            min-height: 100vh; 
+            -webkit-font-smoothing: antialiased; 
+        }
+        
+        .dashboard { display: flex; min-height: 100vh; }
+        
+        .sidebar { 
+            width: var(--sidebar-width); 
+            background: var(--bg-white); 
+            border-right: 1px solid var(--border-color); 
+            display: flex; 
+            flex-direction: column; 
+            position: fixed; 
+            height: 100vh; 
+            z-index: 100; 
+            transition: transform 0.3s ease; 
+        }
+        .sidebar-header { padding: 24px 20px; border-bottom: 1px solid var(--border-color); }
+        .sidebar-logo { font-size: 20px; font-weight: 700; color: var(--brand-color); letter-spacing: 2px; }
+        .sidebar-nav { flex: 1; padding: 16px 12px; overflow-y: auto; -webkit-overflow-scrolling: touch; }
+        .nav-item { 
+            display: flex; 
+            align-items: center; 
+            gap: 12px; 
+            padding: 12px 16px; 
+            border-radius: var(--radius-sm); 
+            color: var(--text-secondary); 
+            text-decoration: none; 
+            font-size: 14px; 
+            font-weight: 500; 
+            margin-bottom: 4px; 
+            transition: all 0.2s; 
+            cursor: pointer; 
+        }
+        .nav-item:hover { background: var(--bg-light); color: var(--text-primary); }
+        .nav-item.active { background: var(--brand-light); color: var(--brand-color); }
+        .nav-item svg { width: 20px; height: 20px; flex-shrink: 0; }
+        .sidebar-footer { padding: 16px 12px; border-top: 1px solid var(--border-color); }
+        .sidebar-overlay { 
+            display: none; 
+            position: fixed; 
+            top: 0; 
+            left: 0; 
+            right: 0; 
+            bottom: 0; 
+            background: rgba(0,0,0,0.5); 
+            z-index: 99; 
+        }
+        .sidebar-overlay.active { display: block; }
+        
+        .main-content { 
+            flex: 1; 
+            margin-left: var(--sidebar-width); 
+            min-height: 100vh; 
+            transition: margin-left 0.3s ease; 
+        }
+        
+        .header { 
+            height: var(--header-height); 
+            background: var(--bg-white); 
+            border-bottom: 1px solid var(--border-color); 
+            display: flex; 
+            align-items: center; 
+            justify-content: space-between; 
+            padding: 0 32px; 
+            position: sticky; 
+            top: 0; 
+            z-index: 50; 
+        }
+        .header-left { display: flex; align-items: center; gap: 16px; }
+        .menu-toggle { 
+            display: none; 
+            width: 40px; 
+            height: 40px; 
+            border-radius: var(--radius-sm); 
+            border: none; 
+            background: var(--bg-light); 
+            cursor: pointer; 
+            align-items: center; 
+            justify-content: center; 
+        }
+        .menu-toggle svg { width: 20px; height: 20px; }
+        .header-title { font-size: 20px; font-weight: 600; }
+        .header-actions { display: flex; align-items: center; gap: 16px; }
+        .header-icon { 
+            width: 40px; 
+            height: 40px; 
+            border-radius: var(--radius-sm); 
+            display: flex; 
+            align-items: center; 
+            justify-content: center; 
+            background: var(--bg-light); 
+            cursor: pointer; 
+            position: relative; 
+            transition: all 0.2s; 
+        }
+        .header-icon:hover { background: var(--border-color); }
+        .header-icon svg { width: 20px; height: 20px; color: var(--text-secondary); }
+        .notification-badge { 
+            position: absolute; 
+            top: -2px; 
+            right: -2px; 
+            width: 18px; 
+            height: 18px; 
+            background: var(--danger); 
+            color: white; 
+            font-size: 10px; 
+            font-weight: 600; 
+            border-radius: 50%; 
+            display: flex; 
+            align-items: center; 
+            justify-content: center; 
+        }
+        .admin-profile { 
+            display: flex; 
+            align-items: center; 
+            gap: 12px; 
+            cursor: pointer; 
+            padding: 8px 12px; 
+            border-radius: var(--radius-sm); 
+            transition: all 0.2s; 
+        }
+        .admin-profile:hover { background: var(--bg-light); }
+        .admin-avatar { 
+            width: 36px; 
+            height: 36px; 
+            border-radius: 50%; 
+            background: var(--brand-color); 
+            display: flex; 
+            align-items: center; 
+            justify-content: center; 
+            color: white; 
+            font-weight: 600; 
+            font-size: 14px; 
+        }
+        .admin-info { text-align: right; }
+        .admin-name { font-size: 14px; font-weight: 500; color: var(--text-primary); }
+        .admin-role { font-size: 12px; color: var(--text-secondary); }
+        
+        .page-content { padding: 32px; }
+        .page { display: none; }
+        .page.active { display: block; }
+        
+        .stats-grid { 
+            display: grid; 
+            grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); 
+            gap: 20px; 
+            margin-bottom: 32px; 
+        }
+        .stat-card { 
+            background: var(--bg-card); 
+            border-radius: var(--radius); 
+            padding: 20px; 
+            box-shadow: var(--shadow); 
+            border: 1px solid var(--border-color); 
+        }
+        .stat-header { 
+            display: flex; 
+            align-items: flex-start; 
+            justify-content: space-between; 
+            margin-bottom: 16px; 
+        }
+        .stat-icon { 
+            width: 44px; 
+            height: 44px; 
+            border-radius: var(--radius-sm); 
+            display: flex; 
+            align-items: center; 
+            justify-content: center; 
+            background: var(--brand-light); 
+        }
+        .stat-icon svg { width: 22px; height: 22px; color: var(--brand-color); }
+        .stat-trend { 
+            display: flex; 
+            align-items: center; 
+            gap: 4px; 
+            font-size: 11px; 
+            font-weight: 500; 
+            padding: 4px 8px; 
+            border-radius: 20px; 
+        }
+        .stat-trend.up { background: rgba(40, 167, 69, 0.1); color: var(--success); }
+        .stat-trend.down { background: rgba(220, 53, 69, 0.1); color: var(--danger); }
+        .stat-value { font-size: 28px; font-weight: 700; color: var(--text-primary); margin-bottom: 4px; }
+        .stat-label { font-size: 13px; color: var(--text-secondary); }
+        
+        .card { 
+            background: var(--bg-card); 
+            border-radius: var(--radius); 
+            box-shadow: var(--shadow); 
+            border: 1px solid var(--border-color); 
+            margin-bottom: 24px; 
+        }
+        .card-header { 
+            display: flex; 
+            align-items: center; 
+            justify-content: space-between; 
+            padding: 16px 20px; 
+            border-bottom: 1px solid var(--border-color); 
+            flex-wrap: wrap; 
+            gap: 12px; 
+        }
+        .card-title { font-size: 16px; font-weight: 600; color: var(--text-primary); }
+        .card-body { padding: 20px; }
+        
+        .table-container { 
+            overflow-x: auto; 
+            -webkit-overflow-scrolling: touch; 
+            margin: 0 -20px; 
+            padding: 0 20px; 
+        }
+        .data-table { width: 100%; border-collapse: collapse; min-width: 600px; }
+        .data-table th { 
+            text-align: left; 
+            padding: 12px 16px; 
+            font-size: 11px; 
+            font-weight: 600; 
+            color: var(--text-secondary); 
+            text-transform: uppercase; 
+            letter-spacing: 0.5px; 
+            border-bottom: 1px solid var(--border-color); 
+            background: var(--bg-light); 
+            white-space: nowrap; 
+        }
+        .data-table td { padding: 14px 16px; font-size: 14px; border-bottom: 1px solid var(--border-color); }
+        .data-table tr:hover { background: var(--bg-light); }
+        .data-table tr:last-child td { border-bottom: none; }
+        
+        .status-badge { 
+            display: inline-flex; 
+            align-items: center; 
+            gap: 6px; 
+            padding: 6px 12px; 
+            border-radius: 20px; 
+            font-size: 12px; 
+            font-weight: 500; 
+            white-space: nowrap; 
+        }
+        .status-badge::before { content: ''; width: 6px; height: 6px; border-radius: 50%; }
+        .status-instock { background: rgba(40, 167, 69, 0.1); color: var(--success); }
+        .status-instock::before { background: var(--success); }
+        .status-low { background: rgba(255, 193, 7, 0.15); color: #856404; }
+        .status-low::before { background: var(--warning); }
+        .status-outstock { background: rgba(220, 53, 69, 0.1); color: var(--danger); }
+        .status-outstock::before { background: var(--danger); }
+        
+        .action-btns { display: flex; gap: 8px; }
+        .action-btn { 
+            width: 36px; 
+            height: 36px; 
+            border-radius: var(--radius-sm); 
+            border: none; 
+            display: flex; 
+            align-items: center; 
+            justify-content: center; 
+            cursor: pointer; 
+            transition: all 0.2s; 
+            background: var(--bg-light); 
+        }
+        .action-btn:hover { background: var(--border-color); }
+        .action-btn svg { width: 18px; height: 18px; }
+        .action-btn.edit { color: var(--info); }
+        .action-btn.delete { color: var(--danger); }
+        .action-btn.view { color: var(--brand-color); }
+        
+        .btn { 
+            display: inline-flex; 
+            align-items: center; 
+            justify-content: center; 
+            gap: 8px; 
+            padding: 14px 24px; 
+            border: none; 
+            border-radius: var(--radius-sm); 
+            font-size: 14px; 
+            font-weight: 500; 
+            cursor: pointer; 
+            transition: all 0.2s; 
+            text-decoration: none; 
+            touch-action: manipulation; 
+        }
+        .btn:active { transform: scale(0.98); }
+        .btn-primary { background: var(--brand-color); color: white; }
+        .btn-primary:hover { background: var(--brand-hover); }
+        .btn-secondary { background: var(--bg-light); color: var(--text-primary); border: 1px solid var(--border-color); }
+        .btn-secondary:hover { background: var(--border-color); }
+        .btn-success { background: var(--success); color: white; }
+        .btn-danger { background: var(--danger); color: white; }
+        .btn-sm { padding: 10px 18px; font-size: 13px; }
+        
+        .modal-overlay { 
+            display: none; 
+            position: fixed; 
+            top: 0; 
+            left: 0; 
+            right: 0; 
+            bottom: 0; 
+            background: rgba(0,0,0,0.5); 
+            z-index: 1000; 
+            align-items: flex-end; 
+            justify-content: center; 
+            padding: 0; 
+        }
+        .modal-overlay.active { display: flex; }
+        .modal { 
+            background: var(--bg-white); 
+            border-radius: var(--radius) var(--radius) 0 0; 
+            width: 100%; 
+            max-width: 600px; 
+            max-height: 90vh; 
+            overflow: hidden; 
+            box-shadow: var(--shadow-lg); 
+            animation: modalSlideUp 0.3s ease; 
+        }
+        @keyframes modalSlideUp { 
+            from { opacity: 0; transform: translateY(100%); } 
+            to { opacity: 1; transform: translateY(0); } 
+        }
+        .modal-header { 
+            display: flex; 
+            align-items: center; 
+            justify-content: space-between; 
+            padding: 16px 20px; 
+            border-bottom: 1px solid var(--border-color); 
+        }
+        .modal-title { font-size: 18px; font-weight: 600; }
+        .modal-close { 
+            width: 36px; 
+            height: 36px; 
+            border-radius: var(--radius-sm); 
+            border: none; 
+            background: var(--bg-light); 
+            cursor: pointer; 
+            display: flex; 
+            align-items: center; 
+            justify-content: center; 
+            transition: all 0.2s; 
+        }
+        .modal-close:hover { background: var(--border-color); }
+        .modal-body { padding: 20px; overflow-y: auto; max-height: 60vh; -webkit-overflow-scrolling: touch; }
+        .modal-footer { 
+            display: flex; 
+            justify-content: flex-end; 
+            gap: 12px; 
+            padding: 16px 20px; 
+            border-top: 1px solid var(--border-color); 
+            background: var(--bg-light); 
+        }
+        
+        .form-row { display: grid; grid-template-columns: 1fr 1fr; gap: 16px; }
+        .form-group { margin-bottom: 20px; }
+        .form-label { 
+            display: block; 
+            font-size: 13px; 
+            font-weight: 500; 
+            color: var(--text-primary); 
+            margin-bottom: 8px; 
+            text-transform: uppercase; 
+            letter-spacing: 0.5px; 
+        }
+        .form-input { 
+            width: 100%; 
+            padding: 14px 16px; 
+            border: 1px solid var(--border-color); 
+            border-radius: var(--radius-sm); 
+            font-size: 15px; 
+            transition: all 0.2s; 
+            background: var(--bg-white); 
+            -webkit-appearance: none; 
+        }
+        .form-input:focus { 
+            outline: none; 
+            border-color: var(--brand-color); 
+            box-shadow: 0 0 0 3px var(--brand-light); 
+        }
+        .form-select, .form-textarea { 
+            width: 100%; 
+            padding: 12px 14px; 
+            border: 1px solid var(--border-color); 
+            border-radius: var(--radius-sm); 
+            font-size: 15px; 
+            transition: all 0.2s; 
+            background: var(--bg-white); 
+            -webkit-appearance: none; 
+        }
+        .form-select:focus, .form-textarea:focus { 
+            outline: none; 
+            border-color: var(--brand-color); 
+            box-shadow: 0 0 0 3px var(--brand-light); 
+        }
+        .form-textarea { resize: vertical; min-height: 100px; }
+        
+        .image-upload { 
+            border: 2px dashed var(--border-color); 
+            border-radius: var(--radius); 
+            padding: 32px 20px; 
+            text-align: center; 
+            cursor: pointer; 
+            transition: all 0.2s; 
+            position: relative;
+        }
+        .image-upload:hover { border-color: var(--brand-color); background: var(--brand-light); }
+        .image-upload.has-images { 
+            border-style: solid; 
+            border-color: var(--success); 
+            background: rgba(40, 167, 69, 0.05); 
+        }
+        .image-upload-icon { width: 48px; height: 48px; margin: 0 auto 16px; color: var(--text-muted); }
+        .image-upload-text { font-size: 14px; color: var(--text-secondary); margin-bottom: 8px; }
+        .image-upload-hint { font-size: 12px; color: var(--text-muted); }
+        
+        .image-preview-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fill, minmax(80px, 1fr));
+            gap: 12px;
+            margin-top: 16px;
+        }
+        .image-preview-item {
+            position: relative;
+            aspect-ratio: 1;
+            border-radius: var(--radius-sm);
+            overflow: hidden;
+            border: 2px solid var(--border-color);
+        }
+        .image-preview-item img {
+            width: 100%;
+            height: 100%;
+            object-fit: cover;
+        }
+        .image-preview-remove {
+            position: absolute;
+            top: 4px;
+            right: 4px;
+            width: 24px;
+            height: 24px;
+            border-radius: 50%;
+            background: var(--danger);
+            color: white;
+            border: none;
+            cursor: pointer;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 12px;
+        }
+        
+        .size-options { display: flex; gap: 10px; flex-wrap: wrap; }
+        .size-option { 
+            min-width: 44px; 
+            padding: 10px 14px; 
+            border: 1px solid var(--border-color); 
+            border-radius: var(--radius-sm); 
+            text-align: center; 
+            cursor: pointer; 
+            font-size: 14px; 
+            transition: all 0.2s; 
+        }
+        .size-option:hover, .size-option.active { 
+            border-color: var(--brand-color); 
+            background: var(--brand-light); 
+            color: var(--brand-color); 
+        }
+        
+        .color-options { display: flex; gap: 10px; flex-wrap: wrap; }
+        .color-option { 
+            width: 36px; 
+            height: 36px; 
+            border-radius: 50%; 
+            cursor: pointer; 
+            border: 3px solid transparent; 
+            transition: all 0.2s; 
+            position: relative;
+        }
+        .color-option:hover { transform: scale(1.1); }
+        .color-option.active { 
+            border-color: var(--brand-color); 
+            box-shadow: 0 0 0 2px white, 0 0 0 4px var(--brand-color); 
+        }
+        .color-option-check {
+            position: absolute;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            color: white;
+            font-size: 16px;
+            text-shadow: 0 1px 2px rgba(0,0,0,0.5);
+            display: none;
+        }
+        .color-option.active .color-option-check { display: block; }
+        
+        .notification-container { 
+            position: fixed; 
+            top: 20px; 
+            right: 20px; 
+            left: 20px; 
+            z-index: 2000; 
+            display: flex; 
+            flex-direction: column; 
+            gap: 12px; 
+            pointer-events: none; 
+        }
+        .notification { 
+            background: var(--bg-white); 
+            border-radius: var(--radius); 
+            padding: 16px 20px; 
+            box-shadow: var(--shadow-lg); 
+            display: flex; 
+            align-items: center; 
+            gap: 12px; 
+            animation: notificationSlide 0.3s ease; 
+            border-left: 4px solid var(--brand-color); 
+            pointer-events: auto; 
+            max-width: 400px;
+        }
+        @keyframes notificationSlide { 
+            from { opacity: 0; transform: translateX(100%); } 
+            to { opacity: 1; transform: translateX(0); } 
+        }
+        .notification.success { border-left-color: var(--success); }
+        .notification.error { border-left-color: var(--danger); }
+        .notification-icon { width: 24px; height: 24px; flex-shrink: 0; }
+        .notification.success .notification-icon { color: var(--success); }
+        .notification.error .notification-icon { color: var(--danger); }
+        .notification-content { flex: 1; min-width: 0; }
+        .notification-title { font-size: 14px; font-weight: 600; margin-bottom: 2px; }
+        .notification-message { font-size: 13px; color: var(--text-secondary); }
+        .notification-close { 
+            width: 28px; 
+            height: 28px; 
+            border: none; 
+            background: transparent; 
+            cursor: pointer; 
+            color: var(--text-muted); 
+            display: flex; 
+            align-items: center; 
+            justify-content: center; 
+            flex-shrink: 0; 
+        }
+        
+        .table-toolbar { 
+            display: flex; 
+            align-items: center; 
+            justify-content: space-between; 
+            gap: 12px; 
+            margin-bottom: 20px; 
+            flex-wrap: wrap; 
+        }
+        .search-box { position: relative; flex: 1; min-width: 200px; max-width: 300px; }
+        .search-box input { 
+            width: 100%; 
+            padding: 10px 14px 10px 40px; 
+            border: 1px solid var(--border-color); 
+            border-radius: var(--radius-sm); 
+            font-size: 14px; 
+        }
+        .search-box svg { 
+            position: absolute; 
+            left: 12px; 
+            top: 50%; 
+            transform: translateY(-50%); 
+            width: 18px; 
+            height: 18px; 
+            color: var(--text-muted); 
+        }
+        
+        .product-image-preview { 
+            width: 56px; 
+            height: 56px; 
+            border-radius: var(--radius-sm); 
+            object-fit: cover; 
+            border: 1px solid var(--border-color); 
+        }
+        
+        .loading-overlay {
+            position: fixed;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            background: rgba(255,255,255,0.8);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            z-index: 3000;
+            opacity: 0;
+            visibility: hidden;
+            transition: all 0.3s;
+        }
+        .loading-overlay.active {
+            opacity: 1;
+            visibility: visible;
+        }
+        .spinner {
+            width: 40px;
+            height: 40px;
+            border: 3px solid var(--border-color);
+            border-top-color: var(--brand-color);
+            border-radius: 50%;
+            animation: spin 1s linear infinite;
+        }
+        @keyframes spin { to { transform: rotate(360deg); } }
+
+        @media (max-width: 768px) {
+            .sidebar { transform: translateX(-100%) !important; width: 280px !important; z-index: 1000 !important; }
+            .sidebar.open { transform: translateX(0) !important; }
+            .sidebar-overlay.active { display: block !important; }
+            .main-content { margin-left: 0 !important; width: 100vw !important; padding: 0 !important; }
+            .menu-toggle { display: flex !important; width: 44px !important; height: 44px !important; }
+            .header { height: 60px !important; padding: 0 16px !important; }
+            .header-title { font-size: 16px !important; }
+            .page-content { padding: 16px !important; margin: 0 !important; width: 100% !important; max-width: 100% !important; }
+            .stats-grid { display: flex !important; flex-direction: column !important; gap: 12px !important; }
+            .stat-card { padding: 16px 12px !important; }
+            .card { margin-bottom: 16px !important; }
+            .card-header { padding: 12px 16px !important; flex-direction: column !important; gap: 8px !important; }
+            .table-container { overflow-x: auto !important; margin: 0 -16px 0 0 !important; padding: 0 16px 16px 0 !important; }
+            .data-table { min-width: 700px !important; }
+            .form-row { grid-template-columns: 1fr; }
+            .modal { max-height: 95vh; }
+        }
+
+        
+        
+    </style>
+</head>
+<body>
+    <!-- Check authentication -->
+    <script>
+        if (localStorage.getItem('adminLoggedIn') !== 'true') {
+            window.location.href = 'index.html';
+        }
+    </script>
+
+    <!-- Loading Overlay -->
+    <div class="loading-overlay" id="loadingOverlay">
+        <div class="spinner"></div>
+    </div>
+
+    <!-- Notification Container -->
+    <div class="notification-container" id="notificationContainer"></div>
+
+    <!-- Sidebar Overlay (Mobile) -->
+    <div class="sidebar-overlay" id="sidebarOverlay" onclick="closeSidebar()"></div>
+
+    <!-- Dashboard -->
+    <div class="dashboard active" id="dashboard">
+        <!-- Sidebar -->
+        <aside class="sidebar" id="sidebar">
+            <div class="sidebar-header">
+                <div class="sidebar-logo">HIM.CLOTHIERS</div>
+            </div>
+            <nav class="sidebar-nav">
+                <a class="nav-item active" data-page="dashboard">
+                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                        <rect x="3" y="3" width="7" height="7"></rect>
+                        <rect x="14" y="3" width="7" height="7"></rect>
+                        <rect x="14" y="14" width="7" height="7"></rect>
+                        <rect x="3" y="14" width="7" height="7"></rect>
+                    </svg>
+                    Dashboard
+                </a>
+                <a class="nav-item" data-page="products">
+                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                        <path d="M21 16V8a2 2 0 0 0-1-1.73l-7-4a2 2 0 0 0-2 0l-7 4A2 2 0 0 0 3 8v8a2 2 0 0 0 1 1.73l7 4a2 2 0 0 0 2 0l7-4A2 2 0 0 0 21 16z"></path>
+                    </svg>
+                    Products
+                </a>
+                <a class="nav-item" data-page="orders">
+                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                        <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"></path>
+                        <polyline points="14 2 14 8 20 8"></polyline>
+                    </svg>
+                    Orders
+                </a>
+            </nav>
+            <div class="sidebar-footer">
+                <a class="nav-item" id="logoutBtn">
+                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                        <path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4"></path>
+                        <polyline points="16 17 21 12 16 7"></polyline>
+                        <line x1="21" y1="12" x2="9" y2="12"></line>
+                    </svg>
+                    Logout
+                </a>
+            </div>
+        </aside>
+
+        <!-- Main Content -->
+        <main class="main-content">
+            <!-- Header -->
+            <header class="header">
+                <div class="header-left">
+                    <button class="menu-toggle" id="menuToggle" onclick="toggleSidebar()">
+                        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                            <line x1="3" y1="12" x2="21" y2="12"></line>
+                            <line x1="3" y1="6" x2="21" y2="6"></line>
+                            <line x1="3" y1="18" x2="21" y2="18"></line>
+                        </svg>
+                    </button>
+                    <h2 class="header-title" id="pageTitle">Dashboard</h2>
+                </div>
+                <div class="header-actions">
+<div class="admin-profile">
+    <div class="admin-info">
+        <div class="admin-name" id="displayAdminName">Admin</div>
+        <div class="admin-role">Super Admin</div>
+    </div>
+    <div class="admin-avatar" id="navAvatar">
+        <svg viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" stroke-width="2">
+            <path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"></path>
+            <circle cx="12" cy="7" r="4"></circle>
+        </svg>
+    </div>
+</div>
+                </div>
+            </header>
+
+            <!-- Page Content -->
+            <div class="page-content">
+                <!-- Dashboard Page -->
+                <div class="page active" id="page-dashboard">
+                    <div class="stats-grid">
+                        <div class="stat-card">
+                            <div class="stat-header">
+                                <div class="stat-icon">
+                                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                                        <path d="M21 16V8a2 2 0 0 0-1-1.73l-7-4a2 2 0 0 0-2 0l-7 4A2 2 0 0 0 3 8v8a2 2 0 0 0 1 1.73l7 4a2 2 0 0 0 2 0l7-4A2 2 0 0 0 21 16z"></path>
+                                    </svg>
+                                </div>
+                            </div>
+                            <div class="stat-value" id="statProducts">0</div>
+                            <div class="stat-label">Total Products</div>
+                        </div>
+                        <div class="stat-card">
+                            <div class="stat-header">
+                                <div class="stat-icon">
+                                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                                        <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"></path>
+                                    </svg>
+                                </div>
+                            </div>
+                            <div class="stat-value" id="statOrders">0</div>
+                            <div class="stat-label">Total Orders</div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Products Page -->
+                <div class="page" id="page-products">
+                    <div class="card">
+                        <div class="card-header">
+                            <h3 class="card-title">Products</h3>
+                            <button class="btn btn-primary btn-sm" onclick="openModal('addProductModal')">
+                                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                                    <line x1="12" y1="5" x2="12" y2="19"></line>
+                                    <line x1="5" y1="12" x2="19" y2="12"></line>
+                                </svg>
+                                Add Product
+                            </button>
+                        </div>
+                        <div class="card-body">
+                            <div class="table-toolbar">
+                                <div class="search-box">
+                                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                                        <circle cx="11" cy="11" r="8"></circle>
+                                        <path d="m21 21-4.35-4.35"></path>
+                                    </svg>
+                                    <input type="text" placeholder="Search products..." id="productSearch" oninput="filterProducts()">
+                                </div>
+                            </div>
+                            <div class="table-container">
+                                <table class="data-table">
+                                    <thead>
+                                        <tr>
+                                            <th>Image</th>
+                                            <th>Product Name</th>
+                                            <th>Category</th>
+                                            <th>Price</th>
+                                            <th>Stock</th>
+                                            <th>Status</th>
+                                            <th>Actions</th>
+                                        </tr>
+                                    </thead>
+                                    <tbody id="productsTable"></tbody>
+                                </table>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Orders Page -->
+                <div class="page" id="page-orders">
+                    <div class="card">
+                        <div class="card-header">
+                            <h3 class="card-title">Orders</h3>
+                        </div>
+                        <div class="card-body">
+                            <p>Orders management coming soon...</p>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </main>
+    </div>
+
+    <!-- Add Product Modal -->
+    <div class="modal-overlay" id="addProductModal">
+        <div class="modal">
+            <div class="modal-header">
+                <h3 class="modal-title">Add New Product</h3>
+                <button class="modal-close" onclick="closeModal('addProductModal')">
+                    <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                        <line x1="18" y1="6" x2="6" y2="18"></line>
+                        <line x1="6" y1="6" x2="18" y2="18"></line>
+                    </svg>
+                </button>
+            </div>
+            <div class="modal-body">
+                <form id="addProductForm">
+                    <!-- Product Images -->
+                    <div class="form-group">
+                        <label class="form-label">Product Images</label>
+                        <div class="image-upload" id="imageUploadArea" onclick="document.getElementById('productImages').click()">
+                            <svg class="image-upload-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                                <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"></path>
+                                <polyline points="17 8 12 3 7 8"></polyline>
+                                <line x1="12" y1="3" x2="12" y2="15"></line>
+                            </svg>
+                            <div class="image-upload-text">Click to upload images</div>
+                            <div class="image-upload-hint">PNG, JPG up to 5MB each. First image is main.</div>
+                            <div class="image-preview-grid" id="imagePreviewGrid"></div>
+                        </div>
+                        <input type="file" id="productImages" hidden accept="image/*" multiple onchange="handleImageSelect(event)">
+                    </div>
+
+                    <div class="form-row">
+                        <div class="form-group">
+                            <label class="form-label">Product Name</label>
+                            <input type="text" class="form-input" id="productName" required>
+                        </div>
+                        <div class="form-group">
+                            <label class="form-label">Category</label>
+                            <select class="form-select" id="productCategory" required>
+                                <option value="">Select category</option>
+                                <option value="sweatshirt">Sweat Shirt</option>
+                                <option value="tshirt">T-Shirts</option>
+                                <option value="hoodie">Hoodies</option>
+                                <option value="jacket">Jackets</option>
+                                <option value="pants">Pants</option>
+                                <option value="accessories">Accessories</option>
+                            </select>
+                        </div>
+                    </div>
+
+                    <div class="form-row">
+                        <div class="form-group">
+                            <label class="form-label">Price (₦)</label>
+                            <input type="number" class="form-input" id="productPrice" step="0.01" min="0" required>
+                        </div>
+                        <div class="form-group">
+                            <label class="form-label">Stock Quantity</label>
+                            <input type="number" class="form-input" id="productStock" min="0" required>
+                        </div>
+                    </div>
+
+                    <div class="form-group">
+                        <label class="form-label">Available Sizes</label>
+                        <div class="size-options" id="sizeOptions">
+                            <span class="size-option" data-size="XS">XS</span>
+                            <span class="size-option" data-size="S">S</span>
+                            <span class="size-option" data-size="M">M</span>
+                            <span class="size-option" data-size="L">L</span>
+                            <span class="size-option" data-size="XL">XL</span>
+                            <span class="size-option" data-size="XXL">XXL</span>
+                        </div>
+                    </div>
+
+                    <div class="form-group">
+                        <label class="form-label">Available Colors</label>
+                        <div class="color-options" id="colorOptions">
+                            <span class="color-option" style="background: #000;" data-color="Black" title="Black">
+                                <span class="color-option-check">✓</span>
+                            </span>
+                            <span class="color-option" style="background: #fff; border: 1px solid #ddd;" data-color="White" title="White">
+                                <span class="color-option-check" style="color: #333;">✓</span>
+                            </span>
+                            <span class="color-option" style="background: #1a3a5c;" data-color="Navy" title="Navy">
+                                <span class="color-option-check">✓</span>
+                            </span>
+                            <span class="color-option" style="background: #4a4a4a;" data-color="Gray" title="Gray">
+                                <span class="color-option-check">✓</span>
+                            </span>
+                            <span class="color-option" style="background: #6F4D38;" data-color="Brown" title="Brown">
+                                <span class="color-option-check">✓</span>
+                            </span>
+                            <span class="color-option" style="background: #8B4513;" data-color="Tan" title="Tan">
+                                <span class="color-option-check">✓</span>
+                            </span>
+                        </div>
+                    </div>
+
+                    <div class="form-group">
+                        <label class="form-label">Description</label>
+                        <textarea class="form-textarea" id="productDescription" rows="3" placeholder="Product description..."></textarea>
+                    </div>
+                </form>
+            </div>
+            <div class="modal-footer">
+                <button class="btn btn-secondary" onclick="closeModal('addProductModal')">Cancel</button>
+                <button class="btn btn-primary" onclick="addProduct()" id="addProductBtn">Add Product</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Edit Product Modal -->
+    <div class="modal-overlay" id="editProductModal">
+        <div class="modal">
+            <div class="modal-header">
+                <h3 class="modal-title">Edit Product</h3>
+                <button class="modal-close" onclick="closeModal('editProductModal')">
+                    <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                        <line x1="18" y1="6" x2="6" y2="18"></line>
+                        <line x1="6" y1="6" x2="18" y2="18"></line>
+                    </svg>
+                </button>
+            </div>
+            <div class="modal-body">
+                <form id="editProductForm">
+                    <input type="hidden" id="editProductId">
+                    
+                    <!-- Current Images -->
+                    <div class="form-group">
+                        <label class="form-label">Current Images</label>
+                        <div class="image-preview-grid" id="editImagePreviewGrid"></div>
+                    </div>
+
+                    <!-- Add New Images -->
+                    <div class="form-group">
+                        <label class="form-label">Add New Images</label>
+                        <div class="image-upload" onclick="document.getElementById('editProductImages').click()">
+                            <svg class="image-upload-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                                <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"></path>
+                                <polyline points="17 8 12 3 7 8"></polyline>
+                            </svg>
+                            <div class="image-upload-text">Click to add more images</div>
+                        </div>
+                        <input type="file" id="editProductImages" hidden accept="image/*" multiple onchange="handleEditImageSelect(event)">
+                        <div class="image-preview-grid" id="editNewImagePreviewGrid"></div>
+                    </div>
+
+                    <div class="form-row">
+                        <div class="form-group">
+                            <label class="form-label">Product Name</label>
+                            <input type="text" class="form-input" id="editProductName" required>
+                        </div>
+                        <div class="form-group">
+                            <label class="form-label">Category</label>
+                            <select class="form-select" id="editProductCategory" required>
+                                <option value="">Select category</option>
+                                <option value="sweatshirt">Sweat Shirt</option>
+                                <option value="tshirt">T-Shirts</option>
+                                <option value="hoodie">Hoodies</option>
+                                <option value="jacket">Jackets</option>
+                                <option value="pants">Pants</option>
+                                <option value="accessories">Accessories</option>
+                            </select>
+                        </div>
+                    </div>
+
+                    <div class="form-row">
+                        <div class="form-group">
+                            <label class="form-label">Price (₦)</label>
+                            <input type="number" class="form-input" id="editProductPrice" step="0.01" min="0" required>
+                        </div>
+                        <div class="form-group">
+                            <label class="form-label">Stock Quantity</label>
+                            <input type="number" class="form-input" id="editProductStock" min="0" required>
+                        </div>
+                    </div>
+
+                    <div class="form-group">
+                        <label class="form-label">Available Sizes</label>
+                        <div class="size-options" id="editSizeOptions">
+                            <span class="size-option" data-size="XS">XS</span>
+                            <span class="size-option" data-size="S">S</span>
+                            <span class="size-option" data-size="M">M</span>
+                            <span class="size-option" data-size="L">L</span>
+                            <span class="size-option" data-size="XL">XL</span>
+                            <span class="size-option" data-size="XXL">XXL</span>
+                        </div>
+                    </div>
+
+                    <div class="form-group">
+                        <label class="form-label">Available Colors</label>
+                        <div class="color-options" id="editColorOptions">
+                            <span class="color-option" style="background: #000;" data-color="Black" title="Black"><span class="color-option-check">✓</span></span>
+                            <span class="color-option" style="background: #fff; border: 1px solid #ddd;" data-color="White" title="White"><span class="color-option-check" style="color: #333;">✓</span></span>
+                            <span class="color-option" style="background: #1a3a5c;" data-color="Navy" title="Navy"><span class="color-option-check">✓</span></span>
+                            <span class="color-option" style="background: #4a4a4a;" data-color="Gray" title="Gray"><span class="color-option-check">✓</span></span>
+                            <span class="color-option" style="background: #6F4D38;" data-color="Brown" title="Brown"><span class="color-option-check">✓</span></span>
+                            <span class="color-option" style="background: #8B4513;" data-color="Tan" title="Tan"><span class="color-option-check">✓</span></span>
+                        </div>
+                    </div>
+
+                    <div class="form-group">
+                        <label class="form-label">Description</label>
+                        <textarea class="form-textarea" id="editProductDescription" rows="3"></textarea>
+                    </div>
+                </form>
+            </div>
+            <div class="modal-footer">
+                <button class="btn btn-secondary" onclick="closeModal('editProductModal')">Cancel</button>
+                <button class="btn btn-primary" onclick="saveProductEdit()" id="editProductBtn">Save Changes</button>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        // Supabase Configuration - REPLACE WITH YOUR CREDENTIALS
+        const SUPABASE_URL = 'https://ddrhpjiaotwtblnlqytw.supabase.co';
+        const SUPABASE_ANON_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImRkcmhwamlhb3R3dGJsbmxxeXR3Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzI3NTI0MjMsImV4cCI6MjA4ODMyODQyM30.GNb6OTErsgNbb0PlEysXD7BtUhkjk0ldQCPbO_5EsKU';
+        
+        const supabaseClient = supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
+        
+        // Global State
+        let products = [];
+        let selectedSizes = [];
+        let selectedColors = [];
+        let selectedImages = [];
+        let editSelectedSizes = [];
+        let editSelectedColors = [];
+        let editExistingImages = [];
+        let editNewImages = [];
+        let currentEditId = null;
+
+        // Initialize
+        document.addEventListener('DOMContentLoaded', async () => {
+            initEventListeners();
+            await loadProducts();
+            updateStats();
+        });
+
+        function initEventListeners() {
+            // Navigation
+            document.querySelectorAll('.nav-item[data-page]').forEach(item => {
+                item.addEventListener('click', () => {
+                    navigateTo(item.dataset.page);
+                    closeSidebar();
+                });
+            });
+            
+            document.getElementById('logoutBtn').addEventListener('click', handleLogout);
+            
+            // Size selection
+            document.querySelectorAll('#sizeOptions .size-option').forEach(option => {
+                option.addEventListener('click', () => toggleSize(option));
+            });
+            
+            document.querySelectorAll('#editSizeOptions .size-option').forEach(option => {
+                option.addEventListener('click', () => toggleEditSize(option));
+            });
+            
+            // Color selection
+            document.querySelectorAll('#colorOptions .color-option').forEach(option => {
+                option.addEventListener('click', () => toggleColor(option));
+            });
+            
+            document.querySelectorAll('#editColorOptions .color-option').forEach(option => {
+                option.addEventListener('click', () => toggleEditColor(option));
+            });
+            
+            // Close modals on escape
+            document.addEventListener('keydown', (e) => {
+                if (e.key === 'Escape') {
+                    closeModal('addProductModal');
+                    closeModal('editProductModal');
+                }
+            });
+            
+            // Close sidebar on resize
+            window.addEventListener('resize', () => {
+                if (window.innerWidth > 1024) closeSidebar();
+            });
+        }
+
+        // Sidebar Functions
+        function toggleSidebar() {
+            const sidebar = document.getElementById('sidebar');
+            const overlay = document.getElementById('sidebarOverlay');
+            sidebar.classList.toggle('open');
+            overlay.classList.toggle('active');
+            document.body.style.overflow = sidebar.classList.contains('open') ? 'hidden' : '';
+        }
+
+        function closeSidebar() {
+            const sidebar = document.getElementById('sidebar');
+            const overlay = document.getElementById('sidebarOverlay');
+            sidebar.classList.remove('open');
+            overlay.classList.remove('active');
+            document.body.style.overflow = '';
+        }
+
+        function handleLogout() {
+            localStorage.removeItem('adminLoggedIn');
+            localStorage.removeItem('adminEmail');
+            window.location.href = 'index.html';
+        }
+
+        function navigateTo(page) {
+            document.querySelectorAll('.nav-item').forEach(item => {
+                item.classList.remove('active');
+                if (item.dataset.page === page) item.classList.add('active');
+            });
+            
+            const titles = { 
+                dashboard: 'Dashboard', 
+                products: 'Products', 
+                orders: 'Orders' 
+            };
+            document.getElementById('pageTitle').textContent = titles[page] || 'Dashboard';
+            
+            document.querySelectorAll('.page').forEach(p => p.classList.remove('active'));
+            document.getElementById('page-' + page)?.classList.add('active');
+            
+            if (page === 'products') loadProducts();
+            window.scrollTo({ top: 0, behavior: 'smooth' });
+        }
+
+        // Image Handling
+        function handleImageSelect(event) {
+            const files = Array.from(event.target.files);
+            files.forEach(file => {
+                if (file.size > 5 * 1024 * 1024) {
+                    showNotification('Error', `${file.name} is too large (max 5MB)`, 'error');
+                    return;
+                }
+                selectedImages.push(file);
+            });
+            updateImagePreview();
+        }
+
+        function updateImagePreview() {
+            const grid = document.getElementById('imagePreviewGrid');
+            const uploadArea = document.getElementById('imageUploadArea');
+            
+            if (selectedImages.length > 0) {
+                uploadArea.classList.add('has-images');
+                grid.innerHTML = selectedImages.map((file, index) => `
+                    <div class="image-preview-item">
+                        <img src="${URL.createObjectURL(file)}" alt="Preview">
+                        <button type="button" class="image-preview-remove" onclick="removeSelectedImage(${index})">×</button>
+                    </div>
+                `).join('');
+            } else {
+                uploadArea.classList.remove('has-images');
+                grid.innerHTML = '';
+            }
+        }
+
+        function removeSelectedImage(index) {
+            selectedImages.splice(index, 1);
+            updateImagePreview();
+        }
+
+        function handleEditImageSelect(event) {
+            const files = Array.from(event.target.files);
+            files.forEach(file => {
+                if (file.size > 5 * 1024 * 1024) {
+                    showNotification('Error', `${file.name} is too large (max 5MB)`, 'error');
+                    return;
+                }
+                editNewImages.push(file);
+            });
+            updateEditImagePreview();
+        }
+
+        function updateEditImagePreview() {
+            const grid = document.getElementById('editNewImagePreviewGrid');
+            grid.innerHTML = editNewImages.map((file, index) => `
+                <div class="image-preview-item">
+                    <img src="${URL.createObjectURL(file)}" alt="Preview">
+                    <button type="button" class="image-preview-remove" onclick="removeEditNewImage(${index})">×</button>
+                </div>
+            `).join('');
+        }
+
+        function removeEditNewImage(index) {
+            editNewImages.splice(index, 1);
+            updateEditImagePreview();
+        }
+
+        function removeEditExistingImage(index) {
+            editExistingImages.splice(index, 1);
+            updateEditExistingPreview();
+        }
+
+        function updateEditExistingPreview() {
+            const grid = document.getElementById('editImagePreviewGrid');
+            grid.innerHTML = editExistingImages.map((url, index) => `
+                <div class="image-preview-item">
+                    <img src="${url}" alt="Product">
+                    <button type="button" class="image-preview-remove" onclick="removeEditExistingImage(${index})">×</button>
+                </div>
+            `).join('');
+        }
+
+        // Size & Color Selection
+        function toggleSize(element) {
+            element.classList.toggle('active');
+            const size = element.dataset.size;
+            if (selectedSizes.includes(size)) {
+                selectedSizes = selectedSizes.filter(s => s !== size);
+            } else {
+                selectedSizes.push(size);
+            }
+        }
+
+        function toggleEditSize(element) {
+            element.classList.toggle('active');
+            const size = element.dataset.size;
+            if (editSelectedSizes.includes(size)) {
+                editSelectedSizes = editSelectedSizes.filter(s => s !== size);
+            } else {
+                editSelectedSizes.push(size);
+            }
+        }
+
+        function toggleColor(element) {
+            element.classList.toggle('active');
+            const color = element.dataset.color;
+            if (selectedColors.includes(color)) {
+                selectedColors = selectedColors.filter(c => c !== color);
+            } else {
+                selectedColors.push(color);
+            }
+        }
+
+        function toggleEditColor(element) {
+            element.classList.toggle('active');
+            const color = element.dataset.color;
+            if (editSelectedColors.includes(color)) {
+                editSelectedColors = editSelectedColors.filter(c => c !== color);
+            } else {
+                editSelectedColors.push(color);
+            }
+        }
+
+        // Product Functions
+        async function loadProducts() {
+    showLoading(true);
+    try {
+        const { data, error } = await supabaseClient
+            .from('products')
+            .select('*')
+            .eq('is_active', true)  // Only active products
+            .order('created_at', { ascending: false });
+        
+        if (error) throw error;
+        
+        products = data || [];
+        renderProducts();
+        updateStats();
+    } catch (error) {
+        console.error('Error loading products:', error);
+        showNotification('Error', 'Failed to load products', 'error');
+    } finally {
+        showLoading(false);
+    }
+}
+
+function renderProducts(productsToRender = products.filter(p => p.is_active !== false)) {
+            const tbody = document.getElementById('productsTable');
+            
+            if (productsToRender.length === 0) {
+                tbody.innerHTML = '<tr><td colspan="7" class="text-center">No products found</td></tr>';
+                return;
+            }
+            
+            tbody.innerHTML = productsToRender.map(product => {
+                const mainImage = product.images && product.images.length > 0 
+                    ? product.images[0] 
+                    : 'data:image/svg+xml,<svg xmlns="http://www.w3.org/2000/svg" width="100" height="100"><rect fill="%23f9f5f2" width="100" height="100"/><text fill="%236F4D38" x="50" y="55" font-size="30" text-anchor="middle">👕</text></svg>';
+                
+                const status = product.stock === 0 ? 'outstock' : product.stock < 10 ? 'low' : 'instock';
+                const statusText = product.stock === 0 ? 'Out of Stock' : product.stock < 10 ? 'Low Stock' : 'In Stock';
+                
+                return `
+                    <tr>
+                        <td><img src="${mainImage}" alt="${product.name}" class="product-image-preview"></td>
+                        <td>${product.name}</td>
+                        <td>${product.category}</td>
+                        <td>₦${parseFloat(product.price).toLocaleString()}</td>
+                        <td>${product.stock}</td>
+                        <td><span class="status-badge status-${status}">${statusText}</span></td>
+                        <td>
+                            <div class="action-btns">
+                                <button class="action-btn edit" onclick="editProduct(${product.id})">
+                                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                                        <path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"></path>
+                                        <path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"></path>
+                                    </svg>
+                                </button>
+                                <button class="action-btn delete" onclick="deleteProduct(${product.id})">
+                                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                                        <polyline points="3 6 5 6 21 6"></polyline>
+                                        <path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"></path>
+                                    </svg>
+                                </button>
+                            </div>
+                        </td>
+                    </tr>
+                `;
+            }).join('');
+        }
+
+        async function addProduct() {
+            const name = document.getElementById('productName').value;
+            const price = parseFloat(document.getElementById('productPrice').value);
+            const stock = parseInt(document.getElementById('productStock').value);
+            const category = document.getElementById('productCategory').value;
+            const description = document.getElementById('productDescription').value;
+            
+            if (!name || !price || !stock || !category) {
+                showNotification('Error', 'Please fill in all required fields', 'error');
+                return;
+            }
+            
+            if (selectedImages.length === 0) {
+                showNotification('Error', 'Please upload at least one image', 'error');
+                return;
+            }
+            
+            showLoading(true);
+            document.getElementById('addProductBtn').disabled = true;
+            
+            try {
+                // Upload images to Supabase Storage
+                const imageUrls = [];
+                for (const file of selectedImages) {
+                    const fileName = `${Date.now()}-${file.name.replace(/[^a-zA-Z0-9.]/g, '')}`;
+                    const { data, error } = await supabaseClient.storage
+                        .from('product-images')
+                        .upload(fileName, file, {
+                            cacheControl: '3600',
+                            upsert: false
+                        });
+                    
+                    if (error) throw error;
+                    
+                    // Get public URL
+                    const { data: { publicUrl } } = supabaseClient.storage
+                        .from('product-images')
+                        .getPublicUrl(fileName);
+                    
+                    imageUrls.push(publicUrl);
+                }
+                
+                // Insert product into database
+                const { data, error } = await supabaseClient
+                    .from('products')
+                    .insert({
+                        name,
+                        category,
+                        price,
+                        stock,
+                        description,
+                        sizes: selectedSizes,
+                        colors: selectedColors,
+                        images: imageUrls,
+                        rating: 4.5,
+                        reviews: 0
+                    })
+                    .select();
+                
+                if (error) throw error;
+                
+                showNotification('Success', 'Product added successfully', 'success');
+                closeModal('addProductModal');
+                resetAddForm();
+                await loadProducts();
+                
+            } catch (error) {
+                console.error('Error adding product:', error);
+                showNotification('Error', error.message || 'Failed to add product', 'error');
+            } finally {
+                showLoading(false);
+                document.getElementById('addProductBtn').disabled = false;
+            }
+        }
+
+        async function editProduct(id) {
+            const product = products.find(p => p.id === id);
+            if (!product) return;
+            
+            currentEditId = id;
+            editExistingImages = [...(product.images || [])];
+            editNewImages = [];
+            editSelectedSizes = [...(product.sizes || [])];
+            editSelectedColors = [...(product.colors || [])];
+            
+            // Fill form
+            document.getElementById('editProductId').value = id;
+            document.getElementById('editProductName').value = product.name;
+            document.getElementById('editProductCategory').value = product.category;
+            document.getElementById('editProductPrice').value = product.price;
+            document.getElementById('editProductStock').value = product.stock;
+            document.getElementById('editProductDescription').value = product.description || '';
+            
+            // Show existing images
+            updateEditExistingPreview();
+            
+            // Set sizes
+            document.querySelectorAll('#editSizeOptions .size-option').forEach(el => {
+                el.classList.toggle('active', editSelectedSizes.includes(el.dataset.size));
+            });
+            
+            // Set colors
+            document.querySelectorAll('#editColorOptions .color-option').forEach(el => {
+                el.classList.toggle('active', editSelectedColors.includes(el.dataset.color));
+            });
+            
+            openModal('editProductModal');
+        }
+
+        async function saveProductEdit() {
+            const name = document.getElementById('editProductName').value;
+            const price = parseFloat(document.getElementById('editProductPrice').value);
+            const stock = parseInt(document.getElementById('editProductStock').value);
+            const category = document.getElementById('editProductCategory').value;
+            const description = document.getElementById('editProductDescription').value;
+            
+            if (!name || !price || !stock || !category) {
+                showNotification('Error', 'Please fill in all required fields', 'error');
+                return;
+            }
+            
+            showLoading(true);
+            document.getElementById('editProductBtn').disabled = true;
+            
+            try {
+                let allImages = [...editExistingImages];
+                
+                // Upload new images if any
+                if (editNewImages.length > 0) {
+                    for (const file of editNewImages) {
+                        const fileName = `${Date.now()}-${file.name.replace(/[^a-zA-Z0-9.]/g, '')}`;
+                        const { data, error } = await supabaseClient.storage
+                            .from('product-images')
+                            .upload(fileName, file, {
+                                cacheControl: '3600',
+                                upsert: false
+                            });
+                        
+                        if (error) throw error;
+                        
+                        const { data: { publicUrl } } = supabaseClient.storage
+                            .from('product-images')
+                            .getPublicUrl(fileName);
+                        
+                        allImages.push(publicUrl);
+                    }
+                }
+                
+                // Update product
+                const { error } = await supabaseClient
+                    .from('products')
+                    .update({
+                        name,
+                        category,
+                        price,
+                        stock,
+                        description,
+                        sizes: editSelectedSizes,
+                        colors: editSelectedColors,
+                        images: allImages,
+                        updated_at: new Date().toISOString()
+                    })
+                    .eq('id', currentEditId);
+                
+                if (error) throw error;
+                
+                showNotification('Success', 'Product updated successfully', 'success');
+                closeModal('editProductModal');
+                await loadProducts();
+                
+            } catch (error) {
+                console.error('Error updating product:', error);
+                showNotification('Error', error.message || 'Failed to update product', 'error');
+            } finally {
+                showLoading(false);
+                document.getElementById('editProductBtn').disabled = false;
+            }
+        }
+
+     async function deleteProduct(id) {
+    if (!confirm('Are you sure you want to delete this product?')) return;
+    
+    showLoading(true);
+    try {
+        const { error } = await supabaseClient
+            .from('products')
+            .delete()
+            .eq('id', id);
+        
+        if (error) throw error;
+        
+        showNotification('Success', 'Product deleted successfully', 'success');
+        await loadProducts();  // Now removes from both table & stats
+    } catch (error) {
+        console.error('Error deleting product:', error);
+        showNotification('Error', error.message || 'Failed to delete product', 'error');
+    } finally {
+        showLoading(false);
+    }
+}
+
+        function filterProducts() {
+            const search = document.getElementById('productSearch').value.toLowerCase();
+            const filtered = products.filter(p => 
+                p.name.toLowerCase().includes(search) || 
+                p.category.toLowerCase().includes(search)
+            );
+            renderProducts(filtered);
+        }
+
+        function resetAddForm() {
+            document.getElementById('addProductForm').reset();
+            selectedImages = [];
+            selectedSizes = [];
+            selectedColors = [];
+            updateImagePreview();
+            document.querySelectorAll('#sizeOptions .size-option').forEach(el => el.classList.remove('active'));
+            document.querySelectorAll('#colorOptions .color-option').forEach(el => el.classList.remove('active'));
+        }
+
+        function updateStats() {
+            document.getElementById('statProducts').textContent = products.length;
+            // You can add orders count here later
+            document.getElementById('statOrders').textContent = '0';
+        }
+
+        // UI Helpers
+        function openModal(modalId) {
+            document.getElementById(modalId).classList.add('active');
+            document.body.style.overflow = 'hidden';
+        }
+
+        function closeModal(modalId) {
+            document.getElementById(modalId).classList.remove('active');
+            document.body.style.overflow = '';
+        }
+
+        function showLoading(show) {
+            const overlay = document.getElementById('loadingOverlay');
+            if (show) {
+                overlay.classList.add('active');
+            } else {
+                overlay.classList.remove('active');
+            }
+        }
+
+        function showNotification(title, message, type) {
+            const container = document.getElementById('notificationContainer');
+            const notification = document.createElement('div');
+            notification.className = `notification ${type}`;
+            
+            const icon = type === 'success' 
+                ? '<svg class="notification-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M22 11.08V12a10 10 0 1 1-5.93-9.14"></path><polyline points="22 4 12 14.01 9 11.01"></polyline></svg>'
+                : '<svg class="notification-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"></circle><line x1="15" y1="9" x2="9" y2="15"></line><line x1="9" y1="9" x2="15" y2="15"></line></svg>';
+            
+            notification.innerHTML = `
+                ${icon}
+                <div class="notification-content">
+                    <div class="notification-title">${title}</div>
+                    <div class="notification-message">${message}</div>
+                </div>
+                <button class="notification-close" onclick="this.parentElement.remove()">
+                    <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                        <line x1="18" y1="6" x2="6" y2="18"></line>
+                        <line x1="6" y1="6" x2="18" y2="18"></line>
+                    </svg>
+                </button>
+            `;
+            
+            container.appendChild(notification);
+            setTimeout(() => notification.remove(), 5000);
+        }
+
+        // Close modal when clicking outside
+        document.querySelectorAll('.modal-overlay').forEach(overlay => {
+            overlay.addEventListener('click', (e) => {
+                if (e.target === overlay) {
+                    closeModal(overlay.id);
+                }
+            });
+        });
+
+ document.addEventListener('DOMContentLoaded', () => {
+    // 1. Check if user is logged in
+    const isLoggedIn = localStorage.getItem('adminLoggedIn');
+    if (isLoggedIn !== 'true') {
+        window.location.href = 'index.html';
+        return;
+    }
+
+    // 2. Load the Profile Image
+    const savedImage = localStorage.getItem('adminProfileImage');
+    const avatarContainer = document.getElementById('navAvatar');
+    if (savedImage && avatarContainer) {
+        avatarContainer.innerHTML = `<img src="${savedImage}" style="width:100%; height:100%; border-radius:50%; object-fit:cover;">`;
+    }
+
+    // 3. Load and Format the Name (FIXED HERE)
+    const adminEmail = localStorage.getItem('adminEmail');
+    const nameDisplay = document.getElementById('displayAdminName');
+    
+    if (adminEmail && nameDisplay) {
+        // We call the function here to clean the name
+        nameDisplay.innerText = formatAdminName(adminEmail);
+    }
+
+    // Initial data load
+    loadProducts(); 
+});
+
+// Keep your formatting function below
+function formatAdminName(email) {
+    if (!email) return "Admin";
+    
+    // 1. Clean the email prefix
+    let namePart = email.split('@')[0].toLowerCase();
+
+    // 2. CUSTOM MAPPING (Add your admins here for perfect spacing)
+    const specialCases = {
+        "macaulayroyal17": "Macaulay Royal",
+        "macaulayroyal": "Macaulay Royal",
+        "oleahisah": "Oleah Isah"
+    };
+
+    if (specialCases[namePart]) {
+        return specialCases[namePart];
+    }
+
+    // 3. FALLBACK: Automatic formatting for other emails
+    // Removes numbers and replaces dots/underscores with spaces
+    let cleanName = namePart.replace(/[0-9]/g, '').replace(/[._]/g, ' ').trim();
+    
+    return cleanName
+        .split(/\s+/)
+        .map(word => word.charAt(0).toUpperCase() + word.slice(1))
+        .join(' ');
+}   </script>
+</body>
+</html>
