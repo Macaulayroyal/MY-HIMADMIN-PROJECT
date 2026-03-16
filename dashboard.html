@@ -243,6 +243,14 @@
         .card-title { font-size: 16px; font-weight: 600; color: var(--text-primary); }
         .card-body { padding: 20px; }
         
+        /* Chart */
+        .chart-container { height: 250px; position: relative; }
+        .chart-bar { display: flex; align-items: flex-end; justify-content: space-around; height: 100%; padding-bottom: 40px; }
+        .chart-item { display: flex; flex-direction: column; align-items: center; gap: 8px; flex: 1; max-width: 50px; }
+        .chart-bar-fill { width: 100%; background: linear-gradient(to top, var(--brand-color), rgba(111, 77, 56, 0.6)); border-radius: 4px 4px 0 0; transition: all 0.3s; min-height: 20px; }
+        .chart-bar-fill:hover { opacity: 0.8; }
+        .chart-label { font-size: 11px; color: var(--text-secondary); }
+        
         .table-container { 
             overflow-x: auto; 
             -webkit-overflow-scrolling: touch; 
@@ -283,6 +291,20 @@
         .status-low::before { background: var(--warning); }
         .status-outstock { background: rgba(220, 53, 69, 0.1); color: var(--danger); }
         .status-outstock::before { background: var(--danger); }
+        .status-pending { background: rgba(255, 193, 7, 0.1); color: #856404; }
+        .status-pending::before { background: var(--warning); }
+        .status-submitted { background: rgba(23, 162, 184, 0.1); color: #0c5460; }
+        .status-submitted::before { background: var(--info); }
+        .status-paid { background: rgba(40, 167, 69, 0.1); color: #155724; }
+        .status-paid::before { background: var(--success); }
+        .status-processing { background: rgba(111, 77, 56, 0.1); color: var(--brand-color); }
+        .status-processing::before { background: var(--brand-color); }
+        .status-shipped { background: rgba(108, 117, 125, 0.1); color: #495057; }
+        .status-shipped::before { background: #6c757d; }
+        .status-delivered { background: rgba(40, 167, 69, 0.15); color: var(--success); }
+        .status-delivered::before { background: var(--success); }
+        .status-rejected { background: rgba(220, 53, 69, 0.1); color: var(--danger); }
+        .status-rejected::before { background: var(--danger); }
         
         .action-btns { display: flex; gap: 8px; }
         .action-btn { 
@@ -325,6 +347,7 @@
         .btn-secondary:hover { background: var(--border-color); }
         .btn-success { background: var(--success); color: white; }
         .btn-danger { background: var(--danger); color: white; }
+        .btn-warning { background: var(--warning); color: var(--text-primary); }
         .btn-sm { padding: 10px 18px; font-size: 13px; }
         
         .modal-overlay { 
@@ -610,6 +633,25 @@
             border: 1px solid var(--border-color); 
         }
         
+        .customer-avatar { 
+            width: 40px; 
+            height: 40px; 
+            border-radius: 50%; 
+            background: var(--brand-light); 
+            display: flex; 
+            align-items: center; 
+            justify-content: center; 
+            color: var(--brand-color); 
+            font-weight: 600; 
+            font-size: 14px; 
+            flex-shrink: 0; 
+        }
+        
+        .tracking-input { display: flex; gap: 8px; flex-wrap: wrap; }
+        .tracking-input input { flex: 1; min-width: 120px; }
+        
+        .receipt-image { max-width: 100%; border-radius: var(--radius-sm); border: 1px solid var(--border-color); }
+        
         .loading-overlay {
             position: fixed;
             top: 0;
@@ -657,9 +699,6 @@
             .form-row { grid-template-columns: 1fr; }
             .modal { max-height: 95vh; }
         }
-
-        
-        
     </style>
 </head>
 <body>
@@ -698,18 +737,69 @@
                     </svg>
                     Dashboard
                 </a>
+                <a class="nav-item" data-page="orders">
+                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                        <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"></path>
+                        <polyline points="14 2 14 8 20 8"></polyline>
+                        <line x1="16" y1="13" x2="8" y2="13"></line>
+                        <line x1="16" y1="17" x2="8" y2="17"></line>
+                    </svg>
+                    Orders
+                </a>
+                <a class="nav-item" data-page="payments">
+                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                        <rect x="1" y="4" width="22" height="16" rx="2" ry="2"></rect>
+                        <line x1="1" y1="10" x2="23" y2="10"></line>
+                    </svg>
+                    Payments
+                </a>
                 <a class="nav-item" data-page="products">
                     <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
                         <path d="M21 16V8a2 2 0 0 0-1-1.73l-7-4a2 2 0 0 0-2 0l-7 4A2 2 0 0 0 3 8v8a2 2 0 0 0 1 1.73l7 4a2 2 0 0 0 2 0l7-4A2 2 0 0 0 21 16z"></path>
                     </svg>
                     Products
                 </a>
-                <a class="nav-item" data-page="orders">
+                <a class="nav-item" data-page="inventory">
                     <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-                        <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"></path>
-                        <polyline points="14 2 14 8 20 8"></polyline>
+                        <path d="M12 2L2 7l10 5 10-5-10-5z"></path>
+                        <path d="M2 17l10 5 10-5"></path>
+                        <path d="M2 12l10 5 10-5"></path>
                     </svg>
-                    Orders
+                    Inventory
+                </a>
+                <a class="nav-item" data-page="customers">
+                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                        <path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"></path>
+                        <circle cx="9" cy="7" r="4"></circle>
+                        <path d="M23 21v-2a4 4 0 0 0-3-3.87"></path>
+                        <path d="M16 3.13a4 4 0 0 1 0 7.75"></path>
+                    </svg>
+                    Customers
+                </a>
+                <a class="nav-item" data-page="shipping">
+                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                        <rect x="1" y="3" width="15" height="13"></rect>
+                        <polygon points="16 8 20 8 23 11 23 16 16 16 16 8"></polygon>
+                        <circle cx="5.5" cy="18.5" r="2.5"></circle>
+                        <circle cx="18.5" cy="18.5" r="2.5"></circle>
+                    </svg>
+                    Shipping
+                </a>
+                <a class="nav-item" data-page="discounts">
+                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                        <circle cx="9" cy="9" r="6"></circle>
+                        <path d="M9 3v6l-4 4"></path>
+                        <path d="M15 9h6"></path>
+                        <path d="M18 6v6"></path>
+                    </svg>
+                    Discount Codes
+                </a>
+                <a class="nav-item" data-page="settings">
+                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                        <circle cx="12" cy="12" r="3"></circle>
+                        <path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1 0 2.83 2 2 0 0 1-2.83 0l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-2 2 2 2 0 0 1-2-2v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 0 1-2.83 0 2 2 0 0 1 0-2.83l.06-.06a1.65 1.65 0 0 0 .33-1.82 1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1-2-2 2 2 0 0 1 2-2h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 0 1 0-2.83 2 2 0 0 1 2.83 0l.06.06a1.65 1.65 0 0 0 1.82.33H9a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 2-2 2 2 0 0 1 2 2v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 0 1 2.83 0 2 2 0 0 1 0 2.83l-.06.06a1.65 1.65 0 0 0-.33 1.82V9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 2 2 2 2 0 0 1-2 2h-.09a1.65 1.65 0 0 0-1.51 1z"></path>
+                    </svg>
+                    Settings
                 </a>
             </nav>
             <div class="sidebar-footer">
@@ -739,18 +829,25 @@
                     <h2 class="header-title" id="pageTitle">Dashboard</h2>
                 </div>
                 <div class="header-actions">
-<div class="admin-profile">
-    <div class="admin-info">
-        <div class="admin-name" id="displayAdminName">Admin</div>
-        <div class="admin-role">Super Admin</div>
-    </div>
-    <div class="admin-avatar" id="navAvatar">
-        <svg viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" stroke-width="2">
-            <path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"></path>
-            <circle cx="12" cy="7" r="4"></circle>
-        </svg>
-    </div>
-</div>
+                    <div class="header-icon" id="notificationIcon">
+                        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                            <path d="M18 8A6 6 0 0 0 6 8c0 7-3 9-3 9h18s-3-2-3-9"></path>
+                            <path d="M13.73 21a2 2 0 0 1-3.46 0"></path>
+                        </svg>
+                        <span class="notification-badge" id="notificationBadge">0</span>
+                    </div>
+                    <div class="admin-profile">
+                        <div class="admin-info">
+                            <div class="admin-name" id="displayAdminName">Admin</div>
+                            <div class="admin-role">Super Admin</div>
+                        </div>
+                        <div class="admin-avatar" id="navAvatar">
+                            <svg viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" stroke-width="2">
+                                <path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"></path>
+                                <circle cx="12" cy="7" r="4"></circle>
+                            </svg>
+                        </div>
+                    </div>
                 </div>
             </header>
 
@@ -763,9 +860,68 @@
                             <div class="stat-header">
                                 <div class="stat-icon">
                                     <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                                        <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"></path>
+                                    </svg>
+                                </div>
+                                <span class="stat-trend up">
+                                    <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3">
+                                        <polyline points="23 6 13.5 15.5 8.5 10.5 1 18"></polyline>
+                                    </svg>
+                                    +12%
+                                </span>
+                            </div>
+                            <div class="stat-value" id="statOrders">0</div>
+                            <div class="stat-label">Total Orders</div>
+                        </div>
+                        <div class="stat-card">
+                            <div class="stat-header">
+                                <div class="stat-icon">
+                                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                                        <rect x="1" y="4" width="22" height="16" rx="2" ry="2"></rect>
+                                        <line x1="1" y1="10" x2="23" y2="10"></line>
+                                    </svg>
+                                </div>
+                                <span class="stat-trend down">
+                                    <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3">
+                                        <polyline points="23 18 13.5 8.5 8.5 13.5 1 6"></polyline>
+                                    </svg>
+                                    -5%
+                                </span>
+                            </div>
+                            <div class="stat-value" id="statPending">0</div>
+                            <div class="stat-label">Pending Payments</div>
+                        </div>
+                        <div class="stat-card">
+                            <div class="stat-header">
+                                <div class="stat-icon">
+                                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                                        <line x1="12" y1="1" x2="12" y2="23"></line>
+                                        <path d="M17 5H9.5a3.5 3.5 0 0 0 0 7h5a3.5 3.5 0 0 1 0 7H6"></path>
+                                    </svg>
+                                </div>
+                                <span class="stat-trend up">
+                                    <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3">
+                                        <polyline points="23 6 13.5 15.5 8.5 10.5 1 18"></polyline>
+                                    </svg>
+                                    +18%
+                                </span>
+                            </div>
+                            <div class="stat-value" id="statRevenue">₦0</div>
+                            <div class="stat-label">Total Revenue</div>
+                        </div>
+                        <div class="stat-card">
+                            <div class="stat-header">
+                                <div class="stat-icon">
+                                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
                                         <path d="M21 16V8a2 2 0 0 0-1-1.73l-7-4a2 2 0 0 0-2 0l-7 4A2 2 0 0 0 3 8v8a2 2 0 0 0 1 1.73l7 4a2 2 0 0 0 2 0l7-4A2 2 0 0 0 21 16z"></path>
                                     </svg>
                                 </div>
+                                <span class="stat-trend up">
+                                    <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3">
+                                        <polyline points="23 6 13.5 15.5 8.5 10.5 1 18"></polyline>
+                                    </svg>
+                                    +8%
+                                </span>
                             </div>
                             <div class="stat-value" id="statProducts">0</div>
                             <div class="stat-label">Total Products</div>
@@ -774,12 +930,136 @@
                             <div class="stat-header">
                                 <div class="stat-icon">
                                     <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-                                        <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"></path>
+                                        <path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"></path>
+                                        <circle cx="9" cy="7" r="4"></circle>
                                     </svg>
                                 </div>
+                                <span class="stat-trend up">
+                                    <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3">
+                                        <polyline points="23 6 13.5 15.5 8.5 10.5 1 18"></polyline>
+                                    </svg>
+                                    +24%
+                                </span>
                             </div>
-                            <div class="stat-value" id="statOrders">0</div>
-                            <div class="stat-label">Total Orders</div>
+                            <div class="stat-value" id="statCustomers">0</div>
+                            <div class="stat-label">Total Customers</div>
+                        </div>
+                    </div>
+
+                    <div class="card">
+                        <div class="card-header">
+                            <h3 class="card-title">Sales Overview</h3>
+                            <select class="form-select" style="width: auto;">
+                                <option>Last 7 Days</option>
+                                <option>Last 30 Days</option>
+                                <option>Last 3 Months</option>
+                            </select>
+                        </div>
+                        <div class="card-body">
+                            <div class="chart-container">
+                                <div class="chart-bar" id="salesChart"></div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="card">
+                        <div class="card-header">
+                            <h3 class="card-title">Recent Orders</h3>
+                            <button class="btn btn-secondary btn-sm" onclick="navigateTo('orders')">View All</button>
+                        </div>
+                        <div class="card-body">
+                            <div class="table-container">
+                                <table class="data-table">
+                                    <thead>
+                                        <tr>
+                                            <th>Order ID</th>
+                                            <th>Customer</th>
+                                            <th>Product</th>
+                                            <th>Amount</th>
+                                            <th>Status</th>
+                                        </tr>
+                                    </thead>
+                                    <tbody id="recentOrdersTable">
+                                        <tr><td colspan="5" class="text-center">Loading...</td></tr>
+                                    </tbody>
+                                </table>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Orders Page -->
+                <div class="page" id="page-orders">
+                    <div class="card">
+                        <div class="card-header">
+                            <h3 class="card-title">All Orders</h3>
+                            <div class="table-toolbar" style="margin: 0;">
+                                <div class="search-box">
+                                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                                        <circle cx="11" cy="11" r="8"></circle>
+                                        <path d="m21 21-4.35-4.35"></path>
+                                    </svg>
+                                    <input type="text" placeholder="Search orders..." id="orderSearch"/>
+                                </div>
+                                <select class="form-select" id="orderStatusFilter" style="width: auto;">
+                                    <option value="">All Status</option>
+                                    <option value="pending">Pending Payment</option>
+                                    <option value="submitted">Payment Submitted</option>
+                                    <option value="paid">Paid</option>
+                                    <option value="processing">Processing</option>
+                                    <option value="shipped">Shipped</option>
+                                    <option value="delivered">Delivered</option>
+                                </select>
+                            </div>
+                        </div>
+                        <div class="card-body">
+                            <div class="table-container">
+                                <table class="data-table">
+                                    <thead>
+                                        <tr>
+                                            <th>Order ID</th>
+                                            <th>Customer</th>
+                                            <th>Product</th>
+                                            <th>Amount</th>
+                                            <th>Payment Method</th>
+                                            <th>Status</th>
+                                            <th>Actions</th>
+                                        </tr>
+                                    </thead>
+                                    <tbody id="ordersTable">
+                                        <tr><td colspan="7" class="text-center">Coming soon...</td></tr>
+                                    </tbody>
+                                </table>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Payments Page -->
+                <div class="page" id="page-payments">
+                    <div class="card">
+                        <div class="card-header">
+                            <h3 class="card-title">Payment Verification</h3>
+                            <span class="status-badge status-submitted" id="pendingCount">0 Pending</span>
+                        </div>
+                        <div class="card-body">
+                            <div class="table-container">
+                                <table class="data-table">
+                                    <thead>
+                                        <tr>
+                                            <th>Order ID</th>
+                                            <th>Customer</th>
+                                            <th>Amount</th>
+                                            <th>Product</th>
+                                            <th>Receipt</th>
+                                            <th>Actions</th>
+                                        </tr>
+                                    </thead>
+                                    <tbody id="paymentsTable">
+                                        <tr><td colspan="6" class="text-center">Coming soon...</td></tr>
+                                    </tbody>
+                                </table>
+                            </div>
                         </div>
                     </div>
                 </div>
@@ -827,14 +1107,184 @@
                     </div>
                 </div>
 
-                <!-- Orders Page -->
-                <div class="page" id="page-orders">
+                <!-- Inventory Page -->
+                <div class="page" id="page-inventory">
                     <div class="card">
                         <div class="card-header">
-                            <h3 class="card-title">Orders</h3>
+                            <h3 class="card-title">Inventory Management</h3>
                         </div>
                         <div class="card-body">
-                            <p>Orders management coming soon...</p>
+                            <div class="table-container">
+                                <table class="data-table">
+                                    <thead>
+                                        <tr>
+                                            <th>Product</th>
+                                            <th>SKU</th>
+                                            <th>Stock</th>
+                                            <th>Status</th>
+                                            <th>Last Updated</th>
+                                            <th>Actions</th>
+                                        </tr>
+                                    </thead>
+                                    <tbody id="inventoryTable">
+                                        <tr><td colspan="6" class="text-center">Coming soon...</td></tr>
+                                    </tbody>
+                                </table>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Customers Page -->
+                <div class="page" id="page-customers">
+                    <div class="card">
+                        <div class="card-header">
+                            <h3 class="card-title">Customers</h3>
+                            <div class="search-box" style="margin: 0; max-width: 300px;">
+                                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                                    <circle cx="11" cy="11" r="8"></circle>
+                                    <path d="m21 21-4.35-4.35"></path>
+                                </svg>
+                                <input type="text" placeholder="Search customers..." id="customerSearch"/>
+                            </div>
+                        </div>
+                        <div class="card-body">
+                            <div class="table-container">
+                                <table class="data-table">
+                                    <thead>
+                                        <tr>
+                                            <th>Customer</th>
+                                            <th>Email</th>
+                                            <th>Phone</th>
+                                            <th>Orders</th>
+                                            <th>Total Spent</th>
+                                            <th>Actions</th>
+                                        </tr>
+                                    </thead>
+                                    <tbody id="customersTable">
+                                        <tr><td colspan="6" class="text-center">Coming soon...</td></tr>
+                                    </tbody>
+                                </table>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Shipping Page -->
+                <div class="page" id="page-shipping">
+                    <div class="card">
+                        <div class="card-header">
+                            <h3 class="card-title">Shipping Management</h3>
+                        </div>
+                        <div class="card-body">
+                            <div class="table-container">
+                                <table class="data-table">
+                                    <thead>
+                                        <tr>
+                                            <th>Order ID</th>
+                                            <th>Customer</th>
+                                            <th>Address</th>
+                                            <th>Current Status</th>
+                                            <th>Tracking</th>
+                                            <th>Update Status</th>
+                                        </tr>
+                                    </thead>
+                                    <tbody id="shippingTable">
+                                        <tr><td colspan="6" class="text-center">Coming soon...</td></tr>
+                                    </tbody>
+                                </table>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Discounts Page -->
+                <div class="page" id="page-discounts">
+                    <div class="card">
+                        <div class="card-header">
+                            <h3 class="card-title">Discount Codes</h3>
+                            <button class="btn btn-primary btn-sm" onclick="openModal('addDiscountModal')">
+                                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                                    <line x1="12" y1="5" x2="12" y2="19"></line>
+                                    <line x1="5" y1="12" x2="19" y2="12"></line>
+                                </svg>
+                                Add Code
+                            </button>
+                        </div>
+                        <div class="card-body">
+                            <div class="table-container">
+                                <table class="data-table">
+                                    <thead>
+                                        <tr>
+                                            <th>Code</th>
+                                            <th>Discount</th>
+                                            <th>Type</th>
+                                            <th>Usage</th>
+                                            <th>Expires</th>
+                                            <th>Status</th>
+                                            <th>Actions</th>
+                                        </tr>
+                                    </thead>
+                                    <tbody id="discountsTable">
+                                        <tr><td colspan="7" class="text-center">Coming soon...</td></tr>
+                                    </tbody>
+                                </table>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Settings Page -->
+                <div class="page" id="page-settings">
+                    <div class="card">
+                        <div class="card-header">
+                            <h3 class="card-title">Store Settings</h3>
+                        </div>
+                        <div class="card-body">
+                            <form id="settingsForm">
+                                <div class="form-row">
+                                    <div class="form-group">
+                                        <label class="form-label">Store Name</label>
+                                        <input type="text" class="form-input" id="storeName" value="HIM.CLOTHIERS"/>
+                                    </div>
+                                    <div class="form-group">
+                                        <label class="form-label">Contact Email</label>
+                                        <input type="email" class="form-input" id="contactEmail" value="support@himclothiers.com"/>
+                                    </div>
+                                </div>
+                                <div class="form-group">
+                                    <label class="form-label">Store Logo</label>
+                                    <div class="image-upload" onclick="document.getElementById('logoUpload').click()">
+                                        <svg class="image-upload-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                                            <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"></path>
+                                            <polyline points="17 8 12 3 7 8"></polyline>
+                                            <line x1="12" y1="3" x2="12" y2="15"></line>
+                                        </svg>
+                                        <div class="image-upload-text">Click to upload logo</div>
+                                        <div class="image-upload-hint">PNG, JPG up to 2MB</div>
+                                    </div>
+                                    <input type="file" id="logoUpload" hidden="" accept="image/*"/>
+                                </div>
+                                <div class="form-group">
+                                    <label class="form-label">Bank Transfer Details</label>
+                                    <textarea class="form-textarea" id="bankDetails" rows="4">Bank: First National Bank
+Account Name: HIM.CLOTHIERS LLC
+Account Number: 1234567890</textarea>
+                                </div>
+                                <div class="form-row">
+                                    <div class="form-group">
+                                        <label class="form-label">Standard Shipping Price (₦)</label>
+                                        <input type="number" class="form-input" id="shippingPrice" value="2500"/>
+                                    </div>
+                                    <div class="form-group">
+                                        <label class="form-label">Express Shipping Price (₦)</label>
+                                        <input type="number" class="form-input" id="expressShippingPrice" value="5000"/>
+                                    </div>
+                                </div>
+                                <div class="text-right">
+                                    <button type="submit" class="btn btn-primary">Save Settings</button>
+                                </div>
+                            </form>
                         </div>
                     </div>
                 </div>
@@ -978,8 +1428,7 @@
                         <label class="form-label">Add New Images</label>
                         <div class="image-upload" onclick="document.getElementById('editProductImages').click()">
                             <svg class="image-upload-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-                                <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"></path>
-                                <polyline points="17 8 12 3 7 8"></polyline>
+                                <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-                                <polyline points="17 8 12 3 7 8"></polyline>
                             </svg>
                             <div class="image-upload-text">Click to add more images</div>
                         </div>
@@ -1054,6 +1503,83 @@
         </div>
     </div>
 
+    <!-- Add Discount Modal -->
+    <div class="modal-overlay" id="addDiscountModal">
+        <div class="modal">
+            <div class="modal-header">
+                <h3 class="modal-title">Add Discount Code</h3>
+                <button class="modal-close" onclick="closeModal('addDiscountModal')">
+                    <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                        <line x1="18" y1="6" x2="6" y2="18"></line>
+                        <line x1="6" y1="6" x2="18" y2="18"></line>
+                    </svg>
+                </button>
+            </div>
+            <div class="modal-body">
+                <form id="addDiscountForm">
+                    <div class="form-row">
+                        <div class="form-group">
+                            <label class="form-label">Code</label>
+                            <input type="text" class="form-input" id="discountCode" placeholder="e.g., SUMMER20" required/>
+                        </div>
+                        <div class="form-group">
+                            <label class="form-label">Discount Type</label>
+                            <select class="form-select" id="discountType">
+                                <option value="percentage">Percentage (%)</option>
+                                <option value="fixed">Fixed Amount (₦)</option>
+                            </select>
+                        </div>
+                    </div>
+                    <div class="form-row">
+                        <div class="form-group">
+                            <label class="form-label">Discount Value</label>
+                            <input type="number" class="form-input" id="discountValue" required/>
+                        </div>
+                        <div class="form-group">
+                            <label class="form-label">Usage Limit</label>
+                            <input type="number" class="form-input" id="discountLimit" placeholder="Unlimited"/>
+                        </div>
+                    </div>
+                    <div class="form-group">
+                        <label class="form-label">Expiry Date</label>
+                        <input type="date" class="form-input" id="discountExpiry"/>
+                    </div>
+                </form>
+            </div>
+            <div class="modal-footer">
+                <button class="btn btn-secondary" onclick="closeModal('addDiscountModal')">Cancel</button>
+                <button class="btn btn-primary" onclick="showNotification('Info', 'Discount functionality coming soon', 'success')">Create Code</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- View Receipt Modal -->
+    <div class="modal-overlay" id="receiptModal">
+        <div class="modal" style="max-width: 500px;">
+            <div class="modal-header">
+                <h3 class="modal-title">Payment Receipt</h3>
+                <button class="modal-close" onclick="closeModal('receiptModal')">
+                    <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                        <line x1="18" y1="6" x2="6" y2="18"></line>
+                        <line x1="6" y1="6" x2="18" y2="18"></line>
+                    </svg>
+                </button>
+            </div>
+            <div class="modal-body text-center">
+                <img src="" alt="Receipt" id="receiptImage" class="receipt-image"/>
+                <div style="margin-top: 20px;">
+                    <p><strong>Order ID:</strong> <span id="receiptOrderId"></span></p>
+                    <p><strong>Amount:</strong> <span id="receiptAmount"></span></p>
+                </div>
+            </div>
+            <div class="modal-footer" id="receiptActions">
+                <button class="btn btn-secondary" onclick="closeModal('receiptModal')">Close</button>
+                <button class="btn btn-danger" onclick="showNotification('Info', 'Functionality coming soon', 'success'); closeModal('receiptModal')">Reject</button>
+                <button class="btn btn-success" onclick="showNotification('Info', 'Functionality coming soon', 'success'); closeModal('receiptModal')">Accept Payment</button>
+            </div>
+        </div>
+    </div>
+
     <script>
         // Supabase Configuration - REPLACE WITH YOUR CREDENTIALS
         const SUPABASE_URL = 'https://ddrhpjiaotwtblnlqytw.supabase.co';
@@ -1077,6 +1603,7 @@
             initEventListeners();
             await loadProducts();
             updateStats();
+            renderSalesChart();
         });
 
         function initEventListeners() {
@@ -1113,12 +1640,20 @@
                 if (e.key === 'Escape') {
                     closeModal('addProductModal');
                     closeModal('editProductModal');
+                    closeModal('addDiscountModal');
+                    closeModal('receiptModal');
                 }
             });
             
             // Close sidebar on resize
             window.addEventListener('resize', () => {
                 if (window.innerWidth > 1024) closeSidebar();
+            });
+
+            // Settings form
+            document.getElementById('settingsForm')?.addEventListener('submit', (e) => {
+                e.preventDefault();
+                showNotification('Info', 'Settings functionality coming soon', 'success');
             });
         }
 
@@ -1153,8 +1688,14 @@
             
             const titles = { 
                 dashboard: 'Dashboard', 
+                orders: 'Orders', 
+                payments: 'Payment Verification',
                 products: 'Products', 
-                orders: 'Orders' 
+                inventory: 'Inventory',
+                customers: 'Customers',
+                shipping: 'Shipping',
+                discounts: 'Discount Codes',
+                settings: 'Settings'
             };
             document.getElementById('pageTitle').textContent = titles[page] || 'Dashboard';
             
@@ -1162,7 +1703,21 @@
             document.getElementById('page-' + page)?.classList.add('active');
             
             if (page === 'products') loadProducts();
+            if (page === 'dashboard') {
+                updateStats();
+                renderSalesChart();
+            }
             window.scrollTo({ top: 0, behavior: 'smooth' });
+        }
+
+        // Chart
+        function renderSalesChart() {
+            const data = [45, 62, 38, 75, 55, 88, 72];
+            const labels = ['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun'];
+            const max = Math.max(...data);
+            document.getElementById('salesChart').innerHTML = data.map((value, i) => 
+                `<div class="chart-item"><div class="chart-bar-fill" style="height: ${(value / max * 200)}px;"></div><span class="chart-label">${labels[i]}</span></div>`
+            ).join('');
         }
 
         // Image Handling
@@ -1286,28 +1841,28 @@
 
         // Product Functions
         async function loadProducts() {
-    showLoading(true);
-    try {
-        const { data, error } = await supabaseClient
-            .from('products')
-            .select('*')
-            .eq('is_active', true)  // Only active products
-            .order('created_at', { ascending: false });
-        
-        if (error) throw error;
-        
-        products = data || [];
-        renderProducts();
-        updateStats();
-    } catch (error) {
-        console.error('Error loading products:', error);
-        showNotification('Error', 'Failed to load products', 'error');
-    } finally {
-        showLoading(false);
-    }
-}
+            showLoading(true);
+            try {
+                const { data, error } = await supabaseClient
+                    .from('products')
+                    .select('*')
+                    .eq('is_active', true)
+                    .order('created_at', { ascending: false });
+                
+                if (error) throw error;
+                
+                products = data || [];
+                renderProducts();
+                updateStats();
+            } catch (error) {
+                console.error('Error loading products:', error);
+                showNotification('Error', 'Failed to load products', 'error');
+            } finally {
+                showLoading(false);
+            }
+        }
 
-function renderProducts(productsToRender = products.filter(p => p.is_active !== false)) {
+        function renderProducts(productsToRender = products.filter(p => p.is_active !== false)) {
             const tbody = document.getElementById('productsTable');
             
             if (productsToRender.length === 0) {
@@ -1531,27 +2086,27 @@ function renderProducts(productsToRender = products.filter(p => p.is_active !== 
             }
         }
 
-     async function deleteProduct(id) {
-    if (!confirm('Are you sure you want to delete this product?')) return;
-    
-    showLoading(true);
-    try {
-        const { error } = await supabaseClient
-            .from('products')
-            .delete()
-            .eq('id', id);
-        
-        if (error) throw error;
-        
-        showNotification('Success', 'Product deleted successfully', 'success');
-        await loadProducts();  // Now removes from both table & stats
-    } catch (error) {
-        console.error('Error deleting product:', error);
-        showNotification('Error', error.message || 'Failed to delete product', 'error');
-    } finally {
-        showLoading(false);
-    }
-}
+        async function deleteProduct(id) {
+            if (!confirm('Are you sure you want to delete this product?')) return;
+            
+            showLoading(true);
+            try {
+                const { error } = await supabaseClient
+                    .from('products')
+                    .delete()
+                    .eq('id', id);
+                
+                if (error) throw error;
+                
+                showNotification('Success', 'Product deleted successfully', 'success');
+                await loadProducts();
+            } catch (error) {
+                console.error('Error deleting product:', error);
+                showNotification('Error', error.message || 'Failed to delete product', 'error');
+            } finally {
+                showLoading(false);
+            }
+        }
 
         function filterProducts() {
             const search = document.getElementById('productSearch').value.toLowerCase();
@@ -1574,8 +2129,10 @@ function renderProducts(productsToRender = products.filter(p => p.is_active !== 
 
         function updateStats() {
             document.getElementById('statProducts').textContent = products.length;
-            // You can add orders count here later
             document.getElementById('statOrders').textContent = '0';
+            document.getElementById('statPending').textContent = '0';
+            document.getElementById('statRevenue').textContent = '₦0';
+            document.getElementById('statCustomers').textContent = '0';
         }
 
         // UI Helpers
@@ -1634,60 +2191,38 @@ function renderProducts(productsToRender = products.filter(p => p.is_active !== 
             });
         });
 
- document.addEventListener('DOMContentLoaded', () => {
-    // 1. Check if user is logged in
-    const isLoggedIn = localStorage.getItem('adminLoggedIn');
-    if (isLoggedIn !== 'true') {
-        window.location.href = 'index.html';
-        return;
-    }
+        // Admin name formatting
+        function formatAdminName(email) {
+            if (!email) return "Admin";
+            let namePart = email.split('@')[0].toLowerCase();
+            const specialCases = {
+                "macaulayroyal17": "Macaulay Royal",
+                "macaulayroyal": "Macaulay Royal",
+                "oleahisah": "Oleah Isah"
+            };
+            if (specialCases[namePart]) {
+                return specialCases[namePart];
+            }
+            let cleanName = namePart.replace(/[0-9]/g, '').replace(/[._]/g, ' ').trim();
+            return cleanName
+                .split(/\s+/)
+                .map(word => word.charAt(0).toUpperCase() + word.slice(1))
+                .join(' ');
+        }
 
-    // 2. Load the Profile Image
-    const savedImage = localStorage.getItem('adminProfileImage');
-    const avatarContainer = document.getElementById('navAvatar');
-    if (savedImage && avatarContainer) {
-        avatarContainer.innerHTML = `<img src="${savedImage}" style="width:100%; height:100%; border-radius:50%; object-fit:cover;">`;
-    }
-
-    // 3. Load and Format the Name (FIXED HERE)
-    const adminEmail = localStorage.getItem('adminEmail');
-    const nameDisplay = document.getElementById('displayAdminName');
-    
-    if (adminEmail && nameDisplay) {
-        // We call the function here to clean the name
-        nameDisplay.innerText = formatAdminName(adminEmail);
-    }
-
-    // Initial data load
-    loadProducts(); 
-});
-
-// Keep your formatting function below
-function formatAdminName(email) {
-    if (!email) return "Admin";
-    
-    // 1. Clean the email prefix
-    let namePart = email.split('@')[0].toLowerCase();
-
-    // 2. CUSTOM MAPPING (Add your admins here for perfect spacing)
-    const specialCases = {
-        "macaulayroyal17": "Macaulay Royal",
-        "macaulayroyal": "Macaulay Royal",
-        "oleahisah": "Oleah Isah"
-    };
-
-    if (specialCases[namePart]) {
-        return specialCases[namePart];
-    }
-
-    // 3. FALLBACK: Automatic formatting for other emails
-    // Removes numbers and replaces dots/underscores with spaces
-    let cleanName = namePart.replace(/[0-9]/g, '').replace(/[._]/g, ' ').trim();
-    
-    return cleanName
-        .split(/\s+/)
-        .map(word => word.charAt(0).toUpperCase() + word.slice(1))
-        .join(' ');
-}   </script>
+        // Load admin info
+        document.addEventListener('DOMContentLoaded', () => {
+            const savedImage = localStorage.getItem('adminProfileImage');
+            const avatarContainer = document.getElementById('navAvatar');
+            if (savedImage && avatarContainer) {
+                avatarContainer.innerHTML = `<img src="${savedImage}" style="width:100%; height:100%; border-radius:50%; object-fit:cover;">`;
+            }
+            const adminEmail = localStorage.getItem('adminEmail');
+            const nameDisplay = document.getElementById('displayAdminName');
+            if (adminEmail && nameDisplay) {
+                nameDisplay.innerText = formatAdminName(adminEmail);
+            }
+        });
+    </script>
 </body>
 </html>
