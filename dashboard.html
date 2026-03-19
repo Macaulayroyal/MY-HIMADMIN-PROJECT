@@ -2160,6 +2160,14 @@ async function acceptOrder(orderId) {
         
         if (error) throw error;
         
+        // CREATE NOTIFICATION FOR CUSTOMER
+        await createNotificationForCustomer(
+            orderId,
+            'accepted',
+            'Payment Confirmed',
+            'Dear customer we have verified your payment. You will get notified when your order arrives.'
+        );
+        
         showNotification('Order Accepted', `Order ${orderId} has been accepted.`, 'success');
         await renderOrders();
         await updateStats();
@@ -2171,7 +2179,6 @@ async function acceptOrder(orderId) {
         showLoading(false);
     }
 }
-
 async function rejectOrder(orderId) {
     if (!confirm('Are you sure you want to REJECT this order?')) return;
     
@@ -2187,6 +2194,14 @@ async function rejectOrder(orderId) {
             .eq('id', orderId);
         
         if (error) throw error;
+        
+        // CREATE NOTIFICATION FOR CUSTOMER
+        await createNotificationForCustomer(
+            orderId,
+            'rejected',
+            'Payment Not Received',
+            'Dear customer, we were unable to verify your payment. Please contact support or try again.'
+        );
         
         showNotification('Order Rejected', `Order ${orderId} has been rejected.`, 'success');
         await renderOrders();
@@ -2556,6 +2571,44 @@ async function deleteProduct(id) {
     }
 }
 
+// Add this function to create notifications for customers
+async function createNotificationForCustomer(orderId, type, title, message) {
+    try {
+        // Get order details first
+        const { data: order, error: orderError } = await supabaseClient
+            .from('orders')
+            .select('customer_email, customer_name')
+            .eq('id', orderId)
+            .single();
+        
+        if (orderError || !order) {
+            console.error('Could not find order:', orderError);
+            return;
+        }
+        
+        // Create notification
+        const { error } = await supabaseClient
+            .from('notifications')
+            .insert({
+                user_email: order.customer_email,
+                type: type, // 'accepted', 'rejected', 'pending'
+                title: title,
+                message: message,
+                order_id: orderId,
+                is_read: false
+            });
+        
+        if (error) {
+            console.error('Error creating notification:', error);
+        } else {
+            console.log('Notification created successfully for', order.customer_email);
+        }
+        
+    } catch (error) {
+        console.error('Error in createNotificationForCustomer:', error);
+    }
+}
+
 function filterProducts() {
     const search = document.getElementById('productSearch').value.toLowerCase();
     const filtered = products.filter(p => 
@@ -2594,6 +2647,7 @@ function showLoading(show) {
         overlay.classList.remove('active');
     }
 }
+
 
 function showNotification(title, message, type) {
     const container = document.getElementById('notificationContainer');
