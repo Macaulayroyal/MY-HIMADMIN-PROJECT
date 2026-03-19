@@ -682,6 +682,9 @@
         @keyframes spin { to { transform: rotate(360deg); } }
 
         @media (max-width: 768px) {
+        .admin-info{
+            display: none !important;
+        }
             .sidebar { transform: translateX(-100%) !important; width: 280px !important; z-index: 1000 !important; }
             .sidebar.open { transform: translateX(0) !important; }
             .sidebar-overlay.active { display: block !important; }
