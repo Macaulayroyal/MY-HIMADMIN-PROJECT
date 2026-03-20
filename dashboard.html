@@ -56,7 +56,11 @@
             transition: transform 0.3s ease; 
         }
         .sidebar-header { padding: 24px 20px; border-bottom: 1px solid var(--border-color); }
-        .sidebar-logo { font-size: 20px; font-weight: 700; color: var(--brand-color); letter-spacing: 2px; }
+        .sidebar-logo {
+            font-weight: bolder;
+            letter-spacing: 1.3px;
+            color: #6F4D38;
+        }
         .sidebar-nav { flex: 1; padding: 16px 12px; overflow-y: auto; -webkit-overflow-scrolling: touch; }
         .nav-item { 
             display: flex; 
@@ -243,7 +247,6 @@
         .card-title { font-size: 16px; font-weight: 600; color: var(--text-primary); }
         .card-body { padding: 20px; }
         
-        /* Chart */
         .chart-container { height: 250px; position: relative; }
         .chart-bar { display: flex; align-items: flex-end; justify-content: space-around; height: 100%; padding-bottom: 40px; }
         .chart-item { display: flex; flex-direction: column; align-items: center; gap: 8px; flex: 1; max-width: 50px; }
@@ -305,6 +308,14 @@
         .status-delivered::before { background: var(--success); }
         .status-rejected { background: rgba(220, 53, 69, 0.1); color: var(--danger); }
         .status-rejected::before { background: var(--danger); }
+        
+        /* NEW STATUS BADGES FOR INVENTORY */
+        .status-packaging { background: rgba(255, 193, 7, 0.15); color: #856404; }
+        .status-packaging::before { background: var(--warning); }
+        .status-shipping { background: rgba(23, 162, 184, 0.15); color: #0c5460; }
+        .status-shipping::before { background: var(--info); }
+        .status-transferring { background: rgba(111, 77, 56, 0.15); color: var(--brand-color); }
+        .status-transferring::before { background: var(--brand-color); }
         
         .action-btns { display: flex; gap: 8px; }
         .action-btn { 
@@ -681,10 +692,29 @@
         }
         @keyframes spin { to { transform: rotate(360deg); } }
 
-        @media (max-width: 768px) {
-        .admin-info{
-            display: none !important;
+        /* Status selector styles */
+        .status-selector {
+            padding: 8px 12px;
+            border-radius: var(--radius-sm);
+            border: 1px solid var(--border-color);
+            font-size: 13px;
+            font-weight: 500;
+            cursor: pointer;
+            transition: all 0.2s;
+            background: var(--bg-white);
+            min-width: 140px;
         }
+        .status-selector:focus {
+            outline: none;
+            border-color: var(--brand-color);
+            box-shadow: 0 0 0 3px var(--brand-light);
+        }
+        .status-selector option {
+            padding: 8px;
+        }
+
+        @media (max-width: 768px) {
+            .admin-info { display: none !important; }
             .sidebar { transform: translateX(-100%) !important; width: 280px !important; z-index: 1000 !important; }
             .sidebar.open { transform: translateX(0) !important; }
             .sidebar-overlay.active { display: block !important; }
@@ -992,53 +1022,52 @@
                 </div>
 
                 <!-- Orders Page -->
-             <!-- Orders Page -->
-<div class="page" id="page-orders">
-    <div class="card">
-        <div class="card-header">
-            <h3 class="card-title">All Orders</h3>
-            <div class="table-toolbar" style="margin: 0;">
-                <div class="search-box">
-                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-                        <circle cx="11" cy="11" r="8"></circle>
-                        <path d="m21 21-4.35-4.35"></path>
-                    </svg>
-                    <input type="text" placeholder="Search orders..." id="orderSearch" oninput="filterOrders()"/>
+                <div class="page" id="page-orders">
+                    <div class="card">
+                        <div class="card-header">
+                            <h3 class="card-title">All Orders</h3>
+                            <div class="table-toolbar" style="margin: 0;">
+                                <div class="search-box">
+                                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                                        <circle cx="11" cy="11" r="8"></circle>
+                                        <path d="m21 21-4.35-4.35"></path>
+                                    </svg>
+                                    <input type="text" placeholder="Search orders..." id="orderSearch" oninput="filterOrders()"/>
+                                </div>
+                                <select class="form-select" id="orderStatusFilter" onchange="filterOrders()" style="width: auto;">
+                                    <option value="">All Status</option>
+                                    <option value="pending">Pending Payment</option>
+                                    <option value="submitted">Payment Submitted</option>
+                                    <option value="paid">Paid</option>
+                                    <option value="processing">Processing</option>
+                                    <option value="shipped">Shipped</option>
+                                    <option value="delivered">Delivered</option>
+                                    <option value="rejected">Rejected</option>
+                                </select>
+                            </div>
+                        </div>
+                        <div class="card-body">
+                            <div class="table-container">
+                                <table class="data-table">
+                                    <thead>
+                                        <tr>
+                                            <th>Order ID</th>
+                                            <th>Customer</th>
+                                            <th>Product</th>
+                                            <th>Amount</th>
+                                            <th>Payment Method</th>
+                                            <th>Status</th>
+                                            <th>Actions</th>
+                                        </tr>
+                                    </thead>
+                                    <tbody id="ordersTable">
+                                        <tr><td colspan="7" class="text-center">Loading...</td></tr>
+                                    </tbody>
+                                </table>
+                            </div>
+                        </div>
+                    </div>
                 </div>
-                <select class="form-select" id="orderStatusFilter" onchange="filterOrders()" style="width: auto;">
-                    <option value="">All Status</option>
-                    <option value="pending">Pending Payment</option>
-                    <option value="submitted">Payment Submitted</option>
-                    <option value="paid">Paid</option>
-                    <option value="processing">Processing</option>
-                    <option value="shipped">Shipped</option>
-                    <option value="delivered">Delivered</option>
-                    <option value="rejected">Rejected</option>
-                </select>
-            </div>
-        </div>
-        <div class="card-body">
-            <div class="table-container">
-                <table class="data-table">
-                    <thead>
-                        <tr>
-                            <th>Order ID</th>
-                            <th>Customer</th>
-                            <th>Product</th>
-                            <th>Amount</th>
-                            <th>Payment Method</th>
-                            <th>Status</th>
-                            <th>Actions</th>
-                        </tr>
-                    </thead>
-                    <tbody id="ordersTable">
-                        <tr><td colspan="7" class="text-center">Loading...</td></tr>
-                    </tbody>
-                </table>
-            </div>
-        </div>
-    </div>
-</div>
 
                 <!-- Payments Page -->
                 <div class="page" id="page-payments">
@@ -1112,27 +1141,43 @@
                     </div>
                 </div>
 
-                <!-- Inventory Page -->
+                <!-- INVENTORY PAGE - FULLY FUNCTIONAL -->
                 <div class="page" id="page-inventory">
                     <div class="card">
                         <div class="card-header">
                             <h3 class="card-title">Inventory Management</h3>
+                            <div class="table-toolbar" style="margin: 0;">
+                                <div class="search-box">
+                                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                                        <circle cx="11" cy="11" r="8"></circle>
+                                        <path d="m21 21-4.35-4.35"></path>
+                                    </svg>
+                                    <input type="text" placeholder="Search inventory..." id="inventorySearch" oninput="filterInventory()"/>
+                                </div>
+                                <select class="form-select" id="inventoryStatusFilter" onchange="filterInventory()" style="width: auto;">
+                                    <option value="">All Status</option>
+                                    <option value="packaging">Packaging</option>
+                                    <option value="shipping">Shipping</option>
+                                    <option value="transferring">Transferring</option>
+                                    <option value="delivered">Delivered</option>
+                                </select>
+                            </div>
                         </div>
                         <div class="card-body">
                             <div class="table-container">
                                 <table class="data-table">
                                     <thead>
                                         <tr>
+                                            <th>Order ID</th>
                                             <th>Product</th>
-                                            <th>SKU</th>
-                                            <th>Stock</th>
-                                            <th>Status</th>
+                                            <th>Customer</th>
+                                            <th>Current Status</th>
                                             <th>Last Updated</th>
-                                            <th>Actions</th>
+                                            <th>Update Status</th>
                                         </tr>
                                     </thead>
                                     <tbody id="inventoryTable">
-                                        <tr><td colspan="6" class="text-center">Coming soon...</td></tr>
+                                        <tr><td colspan="6" class="text-center">Loading inventory...</td></tr>
                                     </tbody>
                                 </table>
                             </div>
@@ -1385,8 +1430,7 @@ Account Number: 1234567890</textarea>
                                 <span class="color-option-check">✓</span>
                             </span>
                             <span class="color-option" style="background: #6F4D38;" data-color="Brown" title="Brown">
-                                <span class="color-option-check">✓</span>
-                            </span>
+                                <span class="color-option-check">✓                            </span>
                             <span class="color-option" style="background: #8B4513;" data-color="Tan" title="Tan">
                                 <span class="color-option-check">✓</span>
                             </span>
@@ -1433,7 +1477,9 @@ Account Number: 1234567890</textarea>
                         <label class="form-label">Add New Images</label>
                         <div class="image-upload" onclick="document.getElementById('editProductImages').click()">
                             <svg class="image-upload-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-                                <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-                                <polyline points="17 8 12 3 7 8"></polyline>
+                                <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"></path>
+                                <polyline points="17 8 12 3 7 8"></polyline>
+                                <line x1="12" y1="3" x2="12" y2="15"></line>
                             </svg>
                             <div class="image-upload-text">Click to add more images</div>
                         </div>
@@ -1587,572 +1633,723 @@ Account Number: 1234567890</textarea>
 
 <script>
     // Supabase Configuration
-const SUPABASE_URL = 'https://ddrhpjiaotwtblnlqytw.supabase.co';
-const SUPABASE_ANON_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImRkcmhwamlhb3R3dGJsbmxxeXR3Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzI3NTI0MjMsImV4cCI6MjA4ODMyODQyM30.GNb6OTErsgNbb0PlEysXD7BtUhkjk0ldQCPbO_5EsKU';
+    const SUPABASE_URL = 'https://ddrhpjiaotwtblnlqytw.supabase.co';
+    const SUPABASE_ANON_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImRkcmhwamlhb3R3dGJsbmxxeXR3Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzI3NTI0MjMsImV4cCI6MjA4ODMyODQyM30.GNb6OTErsgNbb0PlEysXD7BtUhkjk0ldQCPbO_5EsKU';
 
-const supabaseClient = supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
+    const supabaseClient = supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
 
-// Global State
-let products = [];
-let selectedSizes = [];
-let selectedColors = [];
-let selectedImages = [];
-let editSelectedSizes = [];
-let editSelectedColors = [];
-let editExistingImages = [];
-let editNewImages = [];
-let currentEditId = null;
-let currentPage = 'dashboard';
-let allOrders = [];
+    // Global State
+    let products = [];
+    let selectedSizes = [];
+    let selectedColors = [];
+    let selectedImages = [];
+    let editSelectedSizes = [];
+    let editSelectedColors = [];
+    let editExistingImages = [];
+    let editNewImages = [];
+    let currentEditId = null;
+    let currentPage = 'dashboard';
+    let allOrders = [];
+    let inventoryOrders = [];
+    let realtimeSubscription = null;
 
-// Initialize
-document.addEventListener('DOMContentLoaded', async () => {
-    initEventListeners();
-    await loadProducts();
-    await updateStats();
-    renderSalesChart();
-    
-    const savedImage = localStorage.getItem('adminProfileImage');
-    const avatarContainer = document.getElementById('navAvatar');
-    if (savedImage && avatarContainer) {
-        avatarContainer.innerHTML = `<img src="${savedImage}" style="width:100%; height:100%; border-radius:50%; object-fit:cover;">`;
-    }
-    const adminEmail = localStorage.getItem('adminEmail');
-    const nameDisplay = document.getElementById('displayAdminName');
-    if (adminEmail && nameDisplay) {
-        nameDisplay.innerText = formatAdminName(adminEmail);
-    }
-});
-
-function initEventListeners() {
-    document.querySelectorAll('.nav-item[data-page]').forEach(item => {
-        item.addEventListener('click', () => {
-            navigateTo(item.dataset.page);
-            closeSidebar();
-        });
-    });
-    
-    document.getElementById('logoutBtn').addEventListener('click', handleLogout);
-    
-    document.querySelectorAll('#sizeOptions .size-option').forEach(option => {
-        option.addEventListener('click', () => toggleSize(option));
-    });
-    
-    document.querySelectorAll('#editSizeOptions .size-option').forEach(option => {
-        option.addEventListener('click', () => toggleEditSize(option));
-    });
-    
-    document.querySelectorAll('#colorOptions .color-option').forEach(option => {
-        option.addEventListener('click', () => toggleColor(option));
-    });
-    
-    document.querySelectorAll('#editColorOptions .color-option').forEach(option => {
-        option.addEventListener('click', () => toggleEditColor(option));
-    });
-    
-    document.addEventListener('keydown', (e) => {
-        if (e.key === 'Escape') {
-            closeModal('addProductModal');
-            closeModal('editProductModal');
-            closeModal('addDiscountModal');
-            closeModal('receiptModal');
-            closeOrderDetails();
+    // Initialize
+    document.addEventListener('DOMContentLoaded', async () => {
+        initEventListeners();
+        await loadProducts();
+        await updateStats();
+        renderSalesChart();
+        setupRealtimeSubscription();
+        
+        const savedImage = localStorage.getItem('adminProfileImage');
+        const avatarContainer = document.getElementById('navAvatar');
+        if (savedImage && avatarContainer) {
+            avatarContainer.innerHTML = `<img src="${savedImage}" style="width:100%; height:100%; border-radius:50%; object-fit:cover;">`;
+        }
+        const adminEmail = localStorage.getItem('adminEmail');
+        const nameDisplay = document.getElementById('displayAdminName');
+        if (adminEmail && nameDisplay) {
+            nameDisplay.innerText = formatAdminName(adminEmail);
         }
     });
-    
-    window.addEventListener('resize', () => {
-        if (window.innerWidth > 1024) closeSidebar();
-    });
 
-    document.getElementById('settingsForm')?.addEventListener('submit', (e) => {
-        e.preventDefault();
-        showNotification('Info', 'Settings functionality coming soon', 'success');
-    });
-
-    document.querySelectorAll('.modal-overlay').forEach(overlay => {
-        overlay.addEventListener('click', (e) => {
-            if (e.target === overlay) {
-                closeModal(overlay.id);
+    function initEventListeners() {
+        document.querySelectorAll('.nav-item[data-page]').forEach(item => {
+            item.addEventListener('click', () => {
+                navigateTo(item.dataset.page);
+                closeSidebar();
+            });
+        });
+        
+        document.getElementById('logoutBtn').addEventListener('click', handleLogout);
+        
+        document.querySelectorAll('#sizeOptions .size-option').forEach(option => {
+            option.addEventListener('click', () => toggleSize(option));
+        });
+        
+        document.querySelectorAll('#editSizeOptions .size-option').forEach(option => {
+            option.addEventListener('click', () => toggleEditSize(option));
+        });
+        
+        document.querySelectorAll('#colorOptions .color-option').forEach(option => {
+            option.addEventListener('click', () => toggleColor(option));
+        });
+        
+        document.querySelectorAll('#editColorOptions .color-option').forEach(option => {
+            option.addEventListener('click', () => toggleEditColor(option));
+        });
+        
+        document.addEventListener('keydown', (e) => {
+            if (e.key === 'Escape') {
+                closeModal('addProductModal');
+                closeModal('editProductModal');
+                closeModal('addDiscountModal');
+                closeModal('receiptModal');
+                closeOrderDetails();
             }
         });
-    });
-}
+        
+        window.addEventListener('resize', () => {
+            if (window.innerWidth > 1024) closeSidebar();
+        });
 
-// Sidebar Functions
-function toggleSidebar() {
-    const sidebar = document.getElementById('sidebar');
-    const overlay = document.getElementById('sidebarOverlay');
-    sidebar.classList.toggle('open');
-    overlay.classList.toggle('active');
-    document.body.style.overflow = sidebar.classList.contains('open') ? 'hidden' : '';
-}
+        document.getElementById('settingsForm')?.addEventListener('submit', (e) => {
+            e.preventDefault();
+            showNotification('Info', 'Settings functionality coming soon', 'success');
+        });
 
-function closeSidebar() {
-    const sidebar = document.getElementById('sidebar');
-    const overlay = document.getElementById('sidebarOverlay');
-    sidebar.classList.remove('open');
-    overlay.classList.remove('active');
-    document.body.style.overflow = '';
-}
-
-function handleLogout() {
-    localStorage.removeItem('adminLoggedIn');
-    localStorage.removeItem('adminEmail');
-    window.location.href = 'index.html';
-}
-
-function navigateTo(page) {
-    currentPage = page;
-    document.querySelectorAll('.nav-item').forEach(item => {
-        item.classList.remove('active');
-        if (item.dataset.page === page) item.classList.add('active');
-    });
-    
-    const titles = { 
-        dashboard: 'Dashboard', 
-        orders: 'Orders', 
-        payments: 'Payment Verification',
-        products: 'Products', 
-        inventory: 'Inventory',
-        customers: 'Customers',
-        shipping: 'Shipping',
-        discounts: 'Discount Codes',
-        settings: 'Settings'
-    };
-    
-    document.getElementById('pageTitle').textContent = titles[page] || 'Dashboard';
-    document.querySelectorAll('.page').forEach(p => p.classList.remove('active'));
-    document.getElementById('page-' + page)?.classList.add('active');
-    
-    switch(page) {
-        case 'dashboard': 
-            renderDashboard(); 
-            break;
-        case 'orders': 
-            renderOrders();  
-            break;
-        case 'products': 
-            loadProducts(); 
-            break;
+        document.querySelectorAll('.modal-overlay').forEach(overlay => {
+            overlay.addEventListener('click', (e) => {
+                if (e.target === overlay) {
+                    closeModal(overlay.id);
+                }
+            });
+        });
     }
-    
-    window.scrollTo({ top: 0, behavior: 'smooth' });
-}
 
-// Chart
-function renderSalesChart() {
-    const data = [45, 62, 38, 75, 55, 88, 72];
-    const labels = ['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun'];
-    const max = Math.max(...data);
-    document.getElementById('salesChart').innerHTML = data.map((value, i) => 
-        `<div class="chart-item"><div class="chart-bar-fill" style="height: ${(value / max * 200)}px;"></div><span class="chart-label">${labels[i]}</span></div>`
-    ).join('');
-}
+    // Realtime subscription for notifications
+    function setupRealtimeSubscription() {
+        realtimeSubscription = supabaseClient
+            .channel('orders-channel')
+            .on('postgres_changes', {
+                event: '*',
+                schema: 'public',
+                table: 'orders'
+            }, (payload) => {
+                console.log('Order change received:', payload);
+                // Refresh data when orders change
+                if (currentPage === 'orders') renderOrders();
+                if (currentPage === 'inventory') renderInventory();
+                updateStats();
+            })
+            .subscribe();
+    }
 
-// Image Handling
-function handleImageSelect(event) {
-    const files = Array.from(event.target.files);
-    files.forEach(file => {
-        if (file.size > 5 * 1024 * 1024) {
-            showNotification('Error', `${file.name} is too large (max 5MB)`, 'error');
-            return;
+    // Sidebar Functions
+    function toggleSidebar() {
+        const sidebar = document.getElementById('sidebar');
+        const overlay = document.getElementById('sidebarOverlay');
+        sidebar.classList.toggle('open');
+        overlay.classList.toggle('active');
+        document.body.style.overflow = sidebar.classList.contains('open') ? 'hidden' : '';
+    }
+
+    function closeSidebar() {
+        const sidebar = document.getElementById('sidebar');
+        const overlay = document.getElementById('sidebarOverlay');
+        sidebar.classList.remove('open');
+        overlay.classList.remove('active');
+        document.body.style.overflow = '';
+    }
+
+    function handleLogout() {
+        localStorage.removeItem('adminLoggedIn');
+        localStorage.removeItem('adminEmail');
+        if (realtimeSubscription) {
+            supabaseClient.removeChannel(realtimeSubscription);
         }
-        selectedImages.push(file);
-    });
-    updateImagePreview();
-}
+        window.location.href = 'index.html';
+    }
 
-function updateImagePreview() {
-    const grid = document.getElementById('imagePreviewGrid');
-    const uploadArea = document.getElementById('imageUploadArea');
-    
-    if (selectedImages.length > 0) {
-        uploadArea.classList.add('has-images');
-        grid.innerHTML = selectedImages.map((file, index) => `
+    function navigateTo(page) {
+        currentPage = page;
+        document.querySelectorAll('.nav-item').forEach(item => {
+            item.classList.remove('active');
+            if (item.dataset.page === page) item.classList.add('active');
+        });
+        
+        const titles = { 
+            dashboard: 'Dashboard', 
+            orders: 'Orders', 
+            payments: 'Payment Verification',
+            products: 'Products', 
+            inventory: 'Inventory',
+            customers: 'Customers',
+            shipping: 'Shipping',
+            discounts: 'Discount Codes',
+            settings: 'Settings'
+        };
+        
+        document.getElementById('pageTitle').textContent = titles[page] || 'Dashboard';
+        document.querySelectorAll('.page').forEach(p => p.classList.remove('active'));
+        document.getElementById('page-' + page)?.classList.add('active');
+        
+        switch(page) {
+            case 'dashboard': 
+                renderDashboard(); 
+                break;
+            case 'orders': 
+                renderOrders();  
+                break;
+            case 'inventory': 
+                renderInventory(); 
+                break;
+            case 'products': 
+                loadProducts(); 
+                break;
+        }
+        
+        window.scrollTo({ top: 0, behavior: 'smooth' });
+    }
+
+    // Chart
+    function renderSalesChart() {
+        const data = [45, 62, 38, 75, 55, 88, 72];
+        const labels = ['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun'];
+        const max = Math.max(...data);
+        document.getElementById('salesChart').innerHTML = data.map((value, i) => 
+            `<div class="chart-item"><div class="chart-bar-fill" style="height: ${(value / max * 200)}px;"></div><span class="chart-label">${labels[i]}</span></div>`
+        ).join('');
+    }
+
+    // Image Handling
+    function handleImageSelect(event) {
+        const files = Array.from(event.target.files);
+        files.forEach(file => {
+            if (file.size > 5 * 1024 * 1024) {
+                showNotification('Error', `${file.name} is too large (max 5MB)`, 'error');
+                return;
+            }
+            selectedImages.push(file);
+        });
+        updateImagePreview();
+    }
+
+    function updateImagePreview() {
+        const grid = document.getElementById('imagePreviewGrid');
+        const uploadArea = document.getElementById('imageUploadArea');
+        
+        if (selectedImages.length > 0) {
+            uploadArea.classList.add('has-images');
+            grid.innerHTML = selectedImages.map((file, index) => `
+                <div class="image-preview-item">
+                    <img src="${URL.createObjectURL(file)}" alt="Preview">
+                    <button type="button" class="image-preview-remove" onclick="removeSelectedImage(${index})">×</button>
+                </div>
+            `).join('');
+        } else {
+            uploadArea.classList.remove('has-images');
+            grid.innerHTML = '';
+        }
+    }
+
+    function removeSelectedImage(index) {
+        selectedImages.splice(index, 1);
+        updateImagePreview();
+    }
+
+    function handleEditImageSelect(event) {
+        const files = Array.from(event.target.files);
+        files.forEach(file => {
+            if (file.size > 5 * 1024 * 1024) {
+                showNotification('Error', `${file.name} is too large (max 5MB)`, 'error');
+                return;
+            }
+            editNewImages.push(file);
+        });
+        updateEditImagePreview();
+    }
+
+    function updateEditImagePreview() {
+        const grid = document.getElementById('editNewImagePreviewGrid');
+        grid.innerHTML = editNewImages.map((file, index) => `
             <div class="image-preview-item">
                 <img src="${URL.createObjectURL(file)}" alt="Preview">
-                <button type="button" class="image-preview-remove" onclick="removeSelectedImage(${index})">×</button>
+                <button type="button" class="image-preview-remove" onclick="removeEditNewImage(${index})">×</button>
             </div>
         `).join('');
-    } else {
-        uploadArea.classList.remove('has-images');
-        grid.innerHTML = '';
     }
-}
 
-function removeSelectedImage(index) {
-    selectedImages.splice(index, 1);
-    updateImagePreview();
-}
+    function removeEditNewImage(index) {
+        editNewImages.splice(index, 1);
+        updateEditImagePreview();
+    }
 
-function handleEditImageSelect(event) {
-    const files = Array.from(event.target.files);
-    files.forEach(file => {
-        if (file.size > 5 * 1024 * 1024) {
-            showNotification('Error', `${file.name} is too large (max 5MB)`, 'error');
-            return;
+    function removeEditExistingImage(index) {
+        editExistingImages.splice(index, 1);
+        updateEditExistingPreview();
+    }
+
+    function updateEditExistingPreview() {
+        const grid = document.getElementById('editImagePreviewGrid');
+        grid.innerHTML = editExistingImages.map((url, index) => `
+            <div class="image-preview-item">
+                <img src="${url}" alt="Product">
+                <button type="button" class="image-preview-remove" onclick="removeEditExistingImage(${index})">×</button>
+            </div>
+        `).join('');
+    }
+
+    // Size & Color Selection
+    function toggleSize(element) {
+        element.classList.toggle('active');
+        const size = element.dataset.size;
+        if (selectedSizes.includes(size)) {
+            selectedSizes = selectedSizes.filter(s => s !== size);
+        } else {
+            selectedSizes.push(size);
         }
-        editNewImages.push(file);
-    });
-    updateEditImagePreview();
-}
-
-function updateEditImagePreview() {
-    const grid = document.getElementById('editNewImagePreviewGrid');
-    grid.innerHTML = editNewImages.map((file, index) => `
-        <div class="image-preview-item">
-            <img src="${URL.createObjectURL(file)}" alt="Preview">
-            <button type="button" class="image-preview-remove" onclick="removeEditNewImage(${index})">×</button>
-        </div>
-    `).join('');
-}
-
-function removeEditNewImage(index) {
-    editNewImages.splice(index, 1);
-    updateEditImagePreview();
-}
-
-function removeEditExistingImage(index) {
-    editExistingImages.splice(index, 1);
-    updateEditExistingPreview();
-}
-
-function updateEditExistingPreview() {
-    const grid = document.getElementById('editImagePreviewGrid');
-    grid.innerHTML = editExistingImages.map((url, index) => `
-        <div class="image-preview-item">
-            <img src="${url}" alt="Product">
-            <button type="button" class="image-preview-remove" onclick="removeEditExistingImage(${index})">×</button>
-        </div>
-    `).join('');
-}
-
-// Size & Color Selection
-function toggleSize(element) {
-    element.classList.toggle('active');
-    const size = element.dataset.size;
-    if (selectedSizes.includes(size)) {
-        selectedSizes = selectedSizes.filter(s => s !== size);
-    } else {
-        selectedSizes.push(size);
     }
-}
 
-function toggleEditSize(element) {
-    element.classList.toggle('active');
-    const size = element.dataset.size;
-    if (editSelectedSizes.includes(size)) {
-        editSelectedSizes = editSelectedSizes.filter(s => s !== size);
-    } else {
-        editSelectedSizes.push(size);
+    function toggleEditSize(element) {
+        element.classList.toggle('active');
+        const size = element.dataset.size;
+        if (editSelectedSizes.includes(size)) {
+            editSelectedSizes = editSelectedSizes.filter(s => s !== size);
+        } else {
+            editSelectedSizes.push(size);
+        }
     }
-}
 
-function toggleColor(element) {
-    element.classList.toggle('active');
-    const color = element.dataset.color;
-    if (selectedColors.includes(color)) {
-        selectedColors = selectedColors.filter(c => c !== color);
-    } else {
-        selectedColors.push(color);
+    function toggleColor(element) {
+        element.classList.toggle('active');
+        const color = element.dataset.color;
+        if (selectedColors.includes(color)) {
+            selectedColors = selectedColors.filter(c => c !== color);
+        } else {
+            selectedColors.push(color);
+        }
     }
-}
 
-function toggleEditColor(element) {
-    element.classList.toggle('active');
-    const color = element.dataset.color;
-    if (editSelectedColors.includes(color)) {
-        editSelectedColors = editSelectedColors.filter(c => c !== color);
-    } else {
-        editSelectedColors.push(color);
+    function toggleEditColor(element) {
+        element.classList.toggle('active');
+        const color = element.dataset.color;
+        if (editSelectedColors.includes(color)) {
+            editSelectedColors = editSelectedColors.filter(c => c !== color);
+        } else {
+            editSelectedColors.push(color);
+        }
     }
-}
 
-// Product Functions
-async function loadProducts() {
-    showLoading(true);
+    // ==================== INVENTORY MANAGEMENT ====================
+    
+    // Load and render inventory - shows paid/delivered orders with status tracking
+    async function renderInventory() {
+    const tbody = document.getElementById('inventoryTable');
+    if (!tbody) return;
+    
+    tbody.innerHTML = '<tr><td colspan="6" class="text-center">Loading inventory...</td></tr>';
+    
     try {
-        const { data, error } = await supabaseClient
-            .from('products')
-            .select('*')
-            .eq('is_active', true)
-            .order('created_at', { ascending: false });
+        // Get from inventory table instead of orders
+        const { data: inventoryItems, error } = await supabaseClient
+            .from('inventory')
+            .select(`
+                *,
+                orders!inner(*)
+            `)
+            .order('status_updated_at', { ascending: false });
         
         if (error) throw error;
         
-        products = data || [];
-        renderProducts();
+        inventoryOrders = inventoryItems || [];
+        
+        if (inventoryOrders.length === 0) {
+            tbody.innerHTML = '<tr><td colspan="6" class="text-center">No items in inventory</td></tr>';
+            return;
+        }
+        
+        displayInventory(inventoryOrders);
+        
     } catch (error) {
-        console.error('Error loading products:', error);
-        showNotification('Error', 'Failed to load products', 'error');
+        console.error('Error loading inventory:', error);
+        tbody.innerHTML = '<tr><td colspan="6" class="text-center" style="color: #dc3545;">Failed to load inventory</td></tr>';
+    }
+}
+
+   function displayInventory(items) {
+    const tbody = document.getElementById('inventoryTable');
+    if (!tbody) return;
+    
+    tbody.innerHTML = items.map(item => {
+        const statusClass = getInventoryStatusClass(item.current_status);
+        const statusText = formatInventoryStatus(item.current_status);
+        
+        const lastUpdated = new Date(item.status_updated_at).toLocaleString('en-NG');
+        
+        return `
+            <tr>
+                <td><strong style="color: #6F4D38;">${item.order_id.slice(-8).toUpperCase()}</strong></td>
+                <td>${item.product_name || 'N/A'}</td>
+                <td>
+                    <div style="display: flex; align-items: center; gap: 10px;">
+                        <div class="customer-avatar" style="width: 32px; height: 32px; font-size: 12px; background: linear-gradient(135deg, #6F4D38 0%, #8B6F5C 100%); color: white; border-radius: 50%; display: flex; align-items: center; justify-content: center; font-weight: 600;">
+                            ${getInitials(item.customer_name)}
+                        </div>
+                        <span>${item.customer_name || 'Guest'}</span>
+                    </div>
+                </td>
+                <td><span class="status-badge ${statusClass}">${statusText}</span></td>
+                <td style="font-size: 12px; color: #6c757d;">${lastUpdated}</td>
+                <td>
+                    <select class="status-selector" onchange="updateInventoryStatus('${item.id}', '${item.order_id}', this.value)">
+                        <option value="packaging" ${item.current_status === 'packaging' ? 'selected' : ''}>📦 Packaging</option>
+                        <option value="shipping" ${item.current_status === 'shipping' ? 'selected' : ''}>🚚 Shipping</option>
+                        <option value="transferring" ${item.current_status === 'transferring' ? 'selected' : ''}>🔄 Transferring</option>
+                        <option value="delivered" ${item.current_status === 'delivered' ? 'selected' : ''}>✅ Delivered</option>
+                    </select>
+                </td>
+            </tr>
+        `;
+    }).join('');
+}
+
+    function getInventoryStatusClass(status) {
+        const statusMap = {
+            'packaging': 'status-packaging',
+            'shipping': 'status-shipping',
+            'transferring': 'status-transferring',
+            'delivered': 'status-delivered'
+        };
+        return statusMap[status] || 'status-packaging';
+    }
+
+    function formatInventoryStatus(status) {
+        const statusMap = {
+            'packaging': 'Packaging',
+            'shipping': 'Shipping',
+            'transferring': 'Transferring',
+            'delivered': 'Delivered'
+        };
+        return statusMap[status] || status;
+    }
+
+    // Update inventory status and notify customer
+ async function updateInventoryStatus(inventoryId, orderId, newStatus) {
+    showLoading(true);
+    
+    try {
+        const now = new Date().toISOString();
+        
+        // 1. Update inventory table
+        const { error: inventoryError } = await supabaseClient
+            .from('inventory')
+            .update({ 
+                current_status: newStatus,
+                status_updated_at: now,
+                updated_at: now
+            })
+            .eq('id', inventoryId);
+        
+        if (inventoryError) throw inventoryError;
+        
+        // 2. ALSO UPDATE orders table - this is what user's page reads!
+        const { error: orderError } = await supabaseClient
+            .from('orders')
+            .update({ 
+                inventory_status: newStatus,
+                inventory_updated_at: now,
+                status: newStatus === 'delivered' ? 'delivered' : 'processing',
+                updated_at: now
+            })
+            .eq('id', orderId);
+        
+        if (orderError) throw orderError;
+        
+        // 3. Create notification for customer
+        await createInventoryNotification(orderId, newStatus);
+        
+        showNotification('Success', `Status updated to ${formatInventoryStatus(newStatus)}`, 'success');
+        
+        // 4. Refresh both tables
+        await renderInventory();
+        
+    } catch (error) {
+        console.error('Error updating status:', error);
+        showNotification('Error', 'Failed to update status: ' + error.message, 'error');
     } finally {
         showLoading(false);
     }
 }
-
-function renderProducts(productsToRender = products.filter(p => p.is_active !== false)) {
-    const tbody = document.getElementById('productsTable');
-    
-    if (productsToRender.length === 0) {
-        tbody.innerHTML = '<tr><td colspan="7" class="text-center">No products found</td></tr>';
-        return;
+    // Create notification for customer when inventory status changes
+    async function createInventoryNotification(orderId, status) {
+        try {
+            // Get order details
+            const { data: order, error } = await supabaseClient
+                .from('orders')
+                .select('customer_email, customer_name')
+                .eq('id', orderId)
+                .single();
+            
+            if (error || !order) {
+                console.error('Could not find order:', error);
+                return;
+            }
+            
+            // Status messages
+            const statusMessages = {
+                'packaging': {
+                    title: 'Order Being Packaged',
+                    message: `Dear ${order.customer_name || 'Customer'}, your order ${orderId} is currently being packaged. We'll notify you when it ships.`
+                },
+                'shipping': {
+                    title: 'Order Shipped',
+                    message: `Dear ${order.customer_name || 'Customer'}, great news! Your order ${orderId} has been shipped and is on its way to you.`
+                },
+                'transferring': {
+                    title: 'Order In Transit',
+                    message: `Dear ${order.customer_name || 'Customer'}, your order ${orderId} is currently being transferred to your local delivery center.`
+                },
+                'delivered': {
+                    title: 'Order Delivered',
+                    message: `Dear ${order.customer_name || 'Customer'}, your order ${orderId} has been delivered! Thank you for shopping with HIM.CLOTHIERS.`
+                }
+            };
+            
+            const statusInfo = statusMessages[status];
+            if (!statusInfo) return;
+            
+            // Create notification
+            const { error: notifError } = await supabaseClient
+                .from('notifications')
+                .insert({
+                    user_email: order.customer_email,
+                    type: 'order_status',
+                    title: statusInfo.title,
+                    message: statusInfo.message,
+                    order_id: orderId,
+                    status: status,
+                    is_read: false,
+                    created_at: new Date().toISOString()
+                });
+            
+            if (notifError) {
+                console.error('Error creating notification:', notifError);
+            } else {
+                console.log('Notification created for', order.customer_email);
+            }
+            
+        } catch (error) {
+            console.error('Error in createInventoryNotification:', error);
+        }
     }
-    
-    tbody.innerHTML = productsToRender.map(product => {
-        const mainImage = product.images && product.images.length > 0 
-            ? product.images[0] 
-            : 'data:image/svg+xml,<svg xmlns="http://www.w3.org/2000/svg" width="100" height="100"><rect fill="%23f9f5f2" width="100" height="100"/><text fill="%236F4D38" x="50" y="55" font-size="30" text-anchor="middle">👕</text></svg>';
-        
-        const status = product.stock === 0 ? 'outstock' : product.stock < 10 ? 'low' : 'instock';
-        const statusText = product.stock === 0 ? 'Out of Stock' : product.stock < 10 ? 'Low Stock' : 'In Stock';
-        
-        return `
-            <tr>
-                <td><img src="${mainImage}" alt="${product.name}" class="product-image-preview"></td>
-                <td>${product.name}</td>
-                <td>${product.category}</td>
-                <td>₦${parseFloat(product.price).toLocaleString()}</td>
-                <td>${product.stock}</td>
-                <td><span class="status-badge status-${status}">${statusText}</span></td>
-                <td>
-                    <div class="action-btns">
-                        <button class="action-btn edit" onclick="editProduct(${product.id})">
-                            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-                                <path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"></path>
-                                <path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"></path>
-                            </svg>
-                        </button>
-                        <button class="action-btn delete" onclick="deleteProduct(${product.id})">
-                            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-                                <polyline points="3 6 5 6 21 6"></polyline>
-                                <path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"></path>
-                            </svg>
-                        </button>
-                    </div>
-                </td>
-            </tr>
-        `;
-    }).join('');
-}
 
-// FIXED: renderDashboard - shows customer avatar with initials, no product image URL
-async function renderDashboard() {
-    await updateStats();
-    
+async function createInventoryRecord(orderId, customerEmail, customerName, items) {
     try {
-        const { data: recentOrders, error } = await supabaseClient
-            .from('orders')
-            .select('*')
-            .order('created_at', { ascending: false })
-            .limit(5);
+        const productName = items && items[0] ? items[0].name : 'Unknown Product';
+        
+        const { error } = await supabaseClient
+            .from('inventory')
+            .insert({
+                order_id: orderId,
+                customer_email: customerEmail,
+                customer_name: customerName,
+                product_name: productName,
+                current_status: 'packaging',
+                status_updated_at: new Date().toISOString()
+            });
         
         if (error) throw error;
         
-        const tbody = document.getElementById('recentOrdersTable');
+    } catch (error) {
+        console.error('Error creating inventory record:', error);
+    }
+}
+
+    function filterInventory() {
+        const search = document.getElementById('inventorySearch')?.value.toLowerCase() || '';
+        const status = document.getElementById('inventoryStatusFilter')?.value || '';
+        
+        let filtered = inventoryOrders.filter(order => {
+            const matchesSearch = !search || 
+                order.id.toLowerCase().includes(search) || 
+                (order.customer_name && order.customer_name.toLowerCase().includes(search)) ||
+                (order.items && order.items.some(item => item.name.toLowerCase().includes(search)));
+            
+            const matchesStatus = !status || (order.inventory_status || 'packaging') === status;
+            
+            return matchesSearch && matchesStatus;
+        });
+        
+        displayInventory(filtered);
+    }
+
+    // ==================== ORDERS MANAGEMENT ====================
+
+    async function renderOrders() {
+        const tbody = document.getElementById('ordersTable');
         if (!tbody) return;
         
-        if (!recentOrders || recentOrders.length === 0) {
-            tbody.innerHTML = '<tr><td colspan="5" class="text-center">No recent orders</td></tr>';
-            return;
-        }
+        tbody.innerHTML = '<tr><td colspan="7" class="text-center">Loading orders...</td></tr>';
         
-        tbody.innerHTML = recentOrders.map(order => {
+        try {
+            const { data: orders, error } = await supabaseClient
+                .from('orders')
+                .select('*')
+                .order('created_at', { ascending: false });
+            
+            if (error) throw error;
+            
+            if (!orders || orders.length === 0) {
+                tbody.innerHTML = '<tr><td colspan="7" class="text-center">No orders found</td></tr>';
+                return;
+            }
+            
+            allOrders = orders;
+            displayOrders(orders);
+            
+        } catch (error) {
+            console.error('Error loading orders:', error);
+            tbody.innerHTML = '<tr><td colspan="7" class="text-center" style="color: #dc3545;">Failed to load orders</td></tr>';
+        }
+    }
+
+    function displayOrders(orders) {
+        const tbody = document.getElementById('ordersTable');
+        if (!tbody) return;
+        
+        tbody.innerHTML = orders.map(order => {
             const firstItem = order.items && order.items.length > 0 ? order.items[0] : null;
             const itemName = firstItem ? firstItem.name : 'N/A';
             const itemCount = order.items ? order.items.length : 0;
-            const displayProduct = itemCount > 1 ? `${itemName} (+${itemCount - 1})` : itemName;
+            const displayProduct = itemCount > 1 ? `${itemName} (+${itemCount - 1} more)` : itemName;
             
-            // Customer avatar with initials - no URL, just CSS-generated avatar
+            const productImage = firstItem && firstItem.image 
+                ? firstItem.image 
+                : 'data:image/svg+xml,<svg xmlns=%22http://www.w3.org/2000/svg%22 width=%2240%22 height=%2240%22><rect fill=%22%23f9f5f2%22 width=%2240%22 height=%2240%22/><text fill=%22%236F4D38%22 x=%2220%22 y=%2225%22 font-size=%2216%22 text-anchor=%22middle%22>👕</text></svg>';
+            
+            const orderDate = new Date(order.created_at).toLocaleDateString('en-NG');
+            const statusClass = getStatusClass(order.status);
+            
             const customerInitials = getInitials(order.customer_name);
+            
+            let actionButtons = '';
+            if (order.status === 'pending' || order.status === 'submitted') {
+                actionButtons = `
+                    <div class="action-btns">
+                        <button class="action-btn view" onclick="viewOrderDetails('${order.id}')" title="View Details">
+                            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                                <path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"></path>
+                                <circle cx="12" cy="12" r="3"></circle>
+                            </svg>
+                        </button>
+                        <button class="action-btn edit" onclick="acceptOrder('${order.id}')" title="Accept Order" style="color: #28a745;">
+                            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                                <polyline points="20 6 9 17 4 12"></polyline>
+                            </svg>
+                        </button>
+                        <button class="action-btn delete" onclick="rejectOrder('${order.id}')" title="Reject Order">
+                            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                                <line x1="18" y1="6" x2="6" y2="18"></line>
+                                <line x1="6" y1="6" x2="18" y2="18"></line>
+                            </svg>
+                        </button>
+                    </div>
+                `;
+            } else {
+                actionButtons = `
+                    <div class="action-btns">
+                        <button class="action-btn view" onclick="viewOrderDetails('${order.id}')" title="View Details">
+                            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                                <path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"></path>
+                                <circle cx="12" cy="12" r="3"></circle>
+                            </svg>
+                        </button>
+                    </div>
+                `;
+            }
             
             return `
                 <tr>
                     <td>
-                        <div style="display: flex; align-items: center; gap: 8px;">
-                            <span style="font-weight: 600; color: #6F4D38;">${order.id}</span>
+                        <div style="display: flex; align-items: center; gap: 12px;">
+                            <img src="${productImage}" 
+                                 style="width: 40px; height: 40px; object-fit: cover; border-radius: 6px; border: 1px solid #e0e0e0; flex-shrink: 0;"
+                                 onerror="this.style.display='none'">
+                            <div>
+                                <strong>${order.id}</strong><br>
+                                <small style="color: #6c757d;">${orderDate}</small>
+                            </div>
                         </div>
                     </td>
                     <td>
                         <div style="display: flex; align-items: center; gap: 10px;">
-                            <div class="customer-avatar" style="width: 32px; height: 32px; font-size: 12px; background: linear-gradient(135deg, #6F4D38 0%, #8B6F5C 100%); color: white; border-radius: 50%; display: flex; align-items: center; justify-content: center; font-weight: 600; flex-shrink: 0;">
+                            <div class="customer-avatar" style="width: 40px; height: 40px; background: linear-gradient(135deg, #6F4D38 0%, #8B6F5C 100%); color: white; border-radius: 50%; display: flex; align-items: center; justify-content: center; font-weight: 600; font-size: 14px; flex-shrink: 0;">
                                 ${customerInitials}
                             </div>
-                            <span>${order.customer_name || 'Guest'}</span>
+                            <div>
+                                <div style="font-weight: 500;">${order.customer_name || 'Guest'}</div>
+                                <small style="color: #6c757d;">${order.customer_email || ''}</small>
+                            </div>
                         </div>
                     </td>
                     <td>${displayProduct}</td>
-                    <td>₦${parseFloat(order.total_amount).toLocaleString()}</td>
-                    <td><span class="status-badge ${getStatusClass(order.status)}">${formatStatus(order.status)}</span></td>
+                    <td><strong>₦${parseFloat(order.total_amount).toLocaleString()}</strong></td>
+                    <td>${order.payment_method || 'Bank Transfer'}</td>
+                    <td><span class="status-badge ${statusClass}">${formatStatus(order.status)}</span></td>
+                    <td>${actionButtons}</td>
                 </tr>
             `;
         }).join('');
-        
-    } catch (error) {
-        console.error('Error loading recent orders:', error);
-        const tbody = document.getElementById('recentOrdersTable');
-        if (tbody) {
-            tbody.innerHTML = '<tr><td colspan="5" class="text-center">Failed to load orders</td></tr>';
-        }
     }
-}
 
-async function renderOrders() {
-    const tbody = document.getElementById('ordersTable');
-    if (!tbody) return;
-    
-    tbody.innerHTML = '<tr><td colspan="7" class="text-center">Loading orders...</td></tr>';
-    
-    try {
-        const { data: orders, error } = await supabaseClient
-            .from('orders')
-            .select('*')
-            .order('created_at', { ascending: false });
-        
-        if (error) throw error;
-        
-        if (!orders || orders.length === 0) {
-            tbody.innerHTML = '<tr><td colspan="7" class="text-center">No orders found</td></tr>';
-            return;
-        }
-        
-        allOrders = orders;
-        displayOrders(orders);
-        
-    } catch (error) {
-        console.error('Error loading orders:', error);
-        tbody.innerHTML = '<tr><td colspan="7" class="text-center" style="color: #dc3545;">Failed to load orders</td></tr>';
+    function getStatusClass(status) {
+        const statusMap = {
+            'pending': 'status-pending',
+            'submitted': 'status-submitted',
+            'paid': 'status-paid',
+            'processing': 'status-processing',
+            'shipped': 'status-shipped',
+            'delivered': 'status-delivered',
+            'rejected': 'status-rejected'
+        };
+        return statusMap[status] || 'status-pending';
     }
-}
 
-// FIXED: displayOrders - product image without URL text, customer avatar with initials
-function displayOrders(orders) {
-    const tbody = document.getElementById('ordersTable');
-    if (!tbody) return;
-    
-    tbody.innerHTML = orders.map(order => {
-        const firstItem = order.items && order.items.length > 0 ? order.items[0] : null;
-        const itemName = firstItem ? firstItem.name : 'N/A';
-        const itemCount = order.items ? order.items.length : 0;
-        const displayProduct = itemCount > 1 ? `${itemName} (+${itemCount - 1} more)` : itemName;
-        
-        // Product image only - no URL text displayed
-        const productImage = firstItem && firstItem.image 
-            ? firstItem.image 
-            : 'data:image/svg+xml,<svg xmlns=%22http://www.w3.org/2000/svg%22 width=%2240%22 height=%2240%22><rect fill=%22%23f9f5f2%22 width=%2240%22 height=%2240%22/><text fill=%22%236F4D38%22 x=%2220%22 y=%2225%22 font-size=%2216%22 text-anchor=%22middle%22>👕</text></svg>';
-        
-        const orderDate = new Date(order.created_at).toLocaleDateString('en-NG');
-        const statusClass = getStatusClass(order.status);
-        
-        // Customer initials avatar - no URL, CSS-generated
-        const customerInitials = getInitials(order.customer_name);
-        
-        let actionButtons = '';
-        if (order.status === 'pending' || order.status === 'submitted') {
-            actionButtons = `
-                <div class="action-btns">
-                    <button class="action-btn view" onclick="viewOrderDetails('${order.id}')" title="View Details">
-                        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-                            <path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"></path>
-                            <circle cx="12" cy="12" r="3"></circle>
-                        </svg>
-                    </button>
-                    <button class="action-btn edit" onclick="acceptOrder('${order.id}')" title="Accept Order" style="color: #28a745;">
-                        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-                            <polyline points="20 6 9 17 4 12"></polyline>
-                        </svg>
-                    </button>
-                    <button class="action-btn delete" onclick="rejectOrder('${order.id}')" title="Reject Order">
-                        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-                            <line x1="18" y1="6" x2="6" y2="18"></line>
-                            <line x1="6" y1="6" x2="18" y2="18"></line>
-                        </svg>
-                    </button>
-                </div>
-            `;
-        } else {
-            actionButtons = `
-                <div class="action-btns">
-                    <button class="action-btn view" onclick="viewOrderDetails('${order.id}')" title="View Details">
-                        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-                            <path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"></path>
-                            <circle cx="12" cy="12" r="3"></circle>
-                        </svg>
-                    </button>
-                </div>
-            `;
-        }
-        
-        return `
-            <tr>
-                <td>
-                    <div style="display: flex; align-items: center; gap: 12px;">
-                        <img src="${productImage}" 
-                             style="width: 40px; height: 40px; object-fit: cover; border-radius: 6px; border: 1px solid #e0e0e0; flex-shrink: 0;"
-                             onerror="this.style.display='none'">
-                        <div>
-                            <strong>${order.id}</strong><br>
-                            <small style="color: #6c757d;">${orderDate}</small>
-                        </div>
-                    </div>
-                </td>
-                <td>
-                    <div style="display: flex; align-items: center; gap: 10px;">
-                        <div class="customer-avatar" style="width: 40px; height: 40px; background: linear-gradient(135deg, #6F4D38 0%, #8B6F5C 100%); color: white; border-radius: 50%; display: flex; align-items: center; justify-content: center; font-weight: 600; font-size: 14px; flex-shrink: 0;">
-                            ${customerInitials}
-                        </div>
-                        <div>
-                            <div style="font-weight: 500;">${order.customer_name || 'Guest'}</div>
-                            <small style="color: #6c757d;">${order.customer_email || ''}</small>
-                        </div>
-                    </div>
-                </td>
-                <td>${displayProduct}</td>
-                <td><strong>₦${parseFloat(order.total_amount).toLocaleString()}</strong></td>
-                <td>${order.payment_method || 'Bank Transfer'}</td>
-                <td><span class="status-badge ${statusClass}">${formatStatus(order.status)}</span></td>
-                <td>${actionButtons}</td>
-            </tr>
-        `;
-    }).join('');
-}
+    function getInitials(name) {
+        if (!name) return 'G';
+        return name.split(' ').map(n => n[0]).join('').toUpperCase().slice(0, 2);
+    }
 
-function getStatusClass(status) {
-    const statusMap = {
-        'pending': 'status-pending',
-        'submitted': 'status-submitted',
-        'paid': 'status-paid',
-        'processing': 'status-processing',
-        'shipped': 'status-shipped',
-        'delivered': 'status-delivered',
-        'rejected': 'status-rejected'
-    };
-    return statusMap[status] || 'status-pending';
-}
+    function formatStatus(status) {
+        const statusMap = {
+            'pending': 'Pending Payment',
+            'submitted': 'Payment Submitted',
+            'paid': 'Paid',
+            'processing': 'Processing',
+            'shipped': 'Shipped',
+            'delivered': 'Delivered',
+            'rejected': 'Rejected'
+        };
+        return statusMap[status] || status;
+    }
 
-function getInitials(name) {
-    if (!name) return 'G';
-    return name.split(' ').map(n => n[0]).join('').toUpperCase().slice(0, 2);
-}
-
-function formatStatus(status) {
-    const statusMap = {
-        'pending': 'Pending Payment',
-        'submitted': 'Payment Submitted',
-        'paid': 'Paid',
-        'processing': 'Processing',
-        'shipped': 'Shipped',
-        'delivered': 'Delivered',
-        'rejected': 'Rejected'
-    };
-    return statusMap[status] || status;
-}
-
-async function acceptOrder(orderId) {
+  async function acceptOrder(orderId) {
     if (!confirm('Are you sure you want to ACCEPT this order?')) return;
     
     showLoading(true);
     
     try {
+        // Get order details first
+        const { data: order, error: getError } = await supabaseClient
+            .from('orders')
+            .select('*')
+            .eq('id', orderId)
+            .single();
+        
+        if (getError) throw getError;
+        
+        // Update order status
         const { error } = await supabaseClient
             .from('orders')
             .update({ 
@@ -2163,12 +2360,20 @@ async function acceptOrder(orderId) {
         
         if (error) throw error;
         
-        // CREATE NOTIFICATION FOR CUSTOMER
+        // Create inventory record
+        await createInventoryRecord(
+            orderId, 
+            order.customer_email, 
+            order.customer_name, 
+            order.items
+        );
+        
+        // Create notification
         await createNotificationForCustomer(
             orderId,
             'accepted',
             'Payment Confirmed',
-            'Dear customer we have verified your payment. You will get notified when your order arrives.'
+            'Dear customer we have verified your payment. Your order is now being packaged.'
         );
         
         showNotification('Order Accepted', `Order ${orderId} has been accepted.`, 'success');
@@ -2182,328 +2387,402 @@ async function acceptOrder(orderId) {
         showLoading(false);
     }
 }
-async function rejectOrder(orderId) {
-    if (!confirm('Are you sure you want to REJECT this order?')) return;
-    
-    showLoading(true);
-    
-    try {
-        const { error } = await supabaseClient
-            .from('orders')
-            .update({ 
-                status: 'rejected',
-                updated_at: new Date().toISOString()
-            })
-            .eq('id', orderId);
+    async function rejectOrder(orderId) {
+        if (!confirm('Are you sure you want to REJECT this order?')) return;
         
-        if (error) throw error;
+        showLoading(true);
         
-        // CREATE NOTIFICATION FOR CUSTOMER
-        await createNotificationForCustomer(
-            orderId,
-            'rejected',
-            'Payment Not Received',
-            'Dear customer, we were unable to verify your payment. Please contact support or try again.'
-        );
-        
-        showNotification('Order Rejected', `Order ${orderId} has been rejected.`, 'success');
-        await renderOrders();
-        await updateStats();
-        
-    } catch (error) {
-        console.error('Error rejecting order:', error);
-        showNotification('Error', 'Failed to reject order.', 'error');
-    } finally {
-        showLoading(false);
-    }
-}
-
-// FIXED: viewOrderDetails with proper image rendering
-function viewOrderDetails(orderId) {
-    const order = allOrders?.find(o => o.id === orderId);
-    if (!order) return;
-    
-    const itemsHtml = order.items.map((item) => {
-        // FIX: Properly handle image - use item.image or fallback to placeholder
-        const imageUrl = item.image && (item.image.startsWith('http') || item.image.startsWith('data:'))
-            ? item.image 
-            : 'data:image/svg+xml,<svg xmlns=%22http://www.w3.org/2000/svg%22 width=%2260%22 height=%2260%22><rect fill=%22%23f9f5f2%22 width=%2260%22 height=%2260%22/><text fill=%22%236F4D38%22 x=%2230%22 y=%2235%22 font-size=%2220%22 text-anchor=%22middle%22>👕</text></svg>';
-        
-        return `
-        <div style="display: flex; gap: 12px; padding: 12px; background: #f8f9fa; border-radius: 8px; margin-bottom: 8px;">
-            <img src="${imageUrl}" 
-                 alt="${item.name}" 
-                 style="width: 60px; height: 60px; object-fit: cover; border-radius: 6px; border: 1px solid #e0e0e0;"
-                 onerror="this.src='data:image/svg+xml,<svg xmlns=%22http://www.w3.org/2000/svg%22 width=%2260%22 height=%2260%22><rect fill=%22%23f9f5f2%22 width=%2260%22 height=%2260%22/><text fill=%22%236F4D38%22 x=%2230%22 y=%2235%22 font-size=%2220%22 text-anchor=%22middle%22>👕</text></svg>'">
-            <div style="flex: 1;">
-                <div style="font-weight: 600;">${item.name}</div>
-                <div style="font-size: 13px; color: #6c757d;">
-                    Qty: ${item.quantity}${item.size ? ` | Size: ${item.size}` : ''}${item.color ? ` | Color: ${item.color}` : ''}
-                </div>
-                <div style="font-weight: 500; color: #6F4D38;">₦${parseFloat(item.price).toLocaleString()} each</div>
-            </div>
-        </div>
-    `}).join('');
-
-    const modalHtml = `
-        <div class="modal-overlay active" id="orderDetailsModal" onclick="if(event.target===this)closeOrderDetails()">
-            <div class="modal" style="max-width: 600px; max-height: 90vh; overflow-y: auto;">
-                <div class="modal-header">
-                    <h3 class="modal-title">Order Details - ${order.id}</h3>
-                    <button class="modal-close" onclick="closeOrderDetails()">
-                        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-                            <line x1="18" y1="6" x2="6" y2="18"></line>
-                            <line x1="6" y1="6" x2="18" y2="18"></line>
-                        </svg>
-                    </button>
-                </div>
-                <div class="modal-body">
-                    <div style="margin-bottom: 20px;">
-                        <div style="display: flex; justify-content: space-between; margin-bottom: 16px;">
-                            <div>
-                                <div style="font-size: 12px; color: #6c757d; text-transform: uppercase;">Customer</div>
-                                <div style="font-weight: 600; font-size: 16px;">${order.customer_name || 'Guest'}</div>
-                                <div style="font-size: 13px; color: #6c757d;">${order.customer_email || ''}</div>
-                            </div>
-                            <div style="text-align: right;">
-                                <div style="font-size: 12px; color: #6c757d; text-transform: uppercase;">Order Date</div>
-                                <div style="font-weight: 500;">${new Date(order.created_at).toLocaleDateString('en-NG')}</div>
-                            </div>
-                        </div>
-                        
-                        <div style="font-size: 12px; color: #6c757d; text-transform: uppercase; margin-bottom: 8px;">Status</div>
-                        <span class="status-badge ${getStatusClass(order.status)}" style="margin-bottom: 20px; display: inline-block;">
-                            ${formatStatus(order.status)}
-                        </span>
-                    </div>
-                    
-                    <div style="margin-bottom: 20px;">
-                        <div style="font-size: 12px; color: #6c757d; text-transform: uppercase; margin-bottom: 12px;">Items</div>
-                        ${itemsHtml}
-                    </div>
-                    
-                    <div style="background: #f8f9fa; padding: 16px; border-radius: 8px;">
-                        <div style="display: flex; justify-content: space-between; padding-top: 12px; border-top: 1px solid #dee2e6;">
-                            <span style="font-weight: 600;">Total</span>
-                            <span style="font-weight: 700; color: #6F4D38; font-size: 18px;">₦${parseFloat(order.total_amount).toLocaleString()}</span>
-                        </div>
-                    </div>
-                    
-                    ${order.bank_details ? `
-                    <div style="margin-top: 20px; padding: 16px; background: #e8f5e9; border-radius: 8px;">
-                        <div style="font-size: 12px; color: #28a745; text-transform: uppercase; margin-bottom: 8px;">Payment Information</div>
-                        <div style="font-size: 14px;">
-                            <div><strong>Bank:</strong> ${order.bank_details.bank}</div>
-                            <div><strong>Account:</strong> ${order.bank_details.account}</div>
-                            <div><strong>Name:</strong> ${order.bank_details.name}</div>
-                        </div>
-                    </div>
-                    ` : ''}
-                </div>
-                <div class="modal-footer">
-                    <button class="btn btn-secondary" onclick="closeOrderDetails()">Close</button>
-                    ${order.status === 'pending' || order.status === 'submitted' ? `
-                        <button class="btn btn-danger" onclick="rejectOrder('${order.id}'); closeOrderDetails();">Reject</button>
-                        <button class="btn btn-success" onclick="acceptOrder('${order.id}'); closeOrderDetails();">Accept Order</button>
-                    ` : ''}
-                </div>
-            </div>
-        </div>
-    `;
-    
-    const existingModal = document.getElementById('orderDetailsModal');
-    if (existingModal) existingModal.remove();
-    
-    document.body.insertAdjacentHTML('beforeend', modalHtml);
-    document.body.style.overflow = 'hidden';
-}
-
-function closeOrderDetails() {
-    const modal = document.getElementById('orderDetailsModal');
-    if (modal) {
-        modal.remove();
-        document.body.style.overflow = '';
-    }
-}
-
-function filterOrders() {
-    const search = document.getElementById('orderSearch')?.value.toLowerCase() || '';
-    const status = document.getElementById('orderStatusFilter')?.value || '';
-    
-    if (!allOrders) return;
-    
-    const filtered = allOrders.filter(order => {
-        const matchesSearch = !search || 
-            order.id.toLowerCase().includes(search) || 
-            (order.customer_name && order.customer_name.toLowerCase().includes(search)) ||
-            (order.items && order.items.some(item => item.name.toLowerCase().includes(search)));
-        
-        const matchesStatus = !status || order.status === status;
-        
-        return matchesSearch && matchesStatus;
-    });
-    
-    displayOrders(filtered);
-}
-
-async function updateStats() {
-    try {
-        const { count: productsCount } = await supabaseClient
-            .from('products')
-            .select('*', { count: 'exact', head: true })
-            .eq('is_active', true);
-        
-        const { data: orders } = await supabaseClient
-            .from('orders')
-            .select('status, total_amount');
-        
-        if (orders) {
-            const pendingCount = orders.filter(o => o.status === 'pending' || o.status === 'submitted').length;
-            const totalRevenue = orders
-                .filter(o => o.status === 'paid' || o.status === 'delivered')
-                .reduce((sum, o) => sum + parseFloat(o.total_amount), 0);
-            
-            document.getElementById('statOrders').textContent = orders.length;
-            document.getElementById('statPending').textContent = pendingCount;
-            document.getElementById('statRevenue').textContent = '₦' + totalRevenue.toLocaleString();
-        }
-        
-        document.getElementById('statProducts').textContent = productsCount || 0;
-        
-        const pendingPayments = orders?.filter(o => o.status === 'pending' || o.status === 'submitted').length || 0;
-        const badge = document.getElementById('notificationBadge');
-        if (badge) {
-            badge.textContent = pendingPayments;
-            badge.style.display = pendingPayments > 0 ? 'flex' : 'none';
-        }
-        
-    } catch (error) {
-        console.error('Error updating stats:', error);
-    }
-}
-
-async function addProduct() {
-    const name = document.getElementById('productName').value;
-    const price = parseFloat(document.getElementById('productPrice').value);
-    const stock = parseInt(document.getElementById('productStock').value);
-    const category = document.getElementById('productCategory').value;
-    const description = document.getElementById('productDescription').value;
-    
-    if (!name || !price || !stock || !category) {
-        showNotification('Error', 'Please fill in all required fields', 'error');
-        return;
-    }
-    
-    if (selectedImages.length === 0) {
-        showNotification('Error', 'Please upload at least one image', 'error');
-        return;
-    }
-    
-    showLoading(true);
-    document.getElementById('addProductBtn').disabled = true;
-    
-    try {
-        const imageUrls = [];
-        for (const file of selectedImages) {
-            const fileName = `${Date.now()}-${file.name.replace(/[^a-zA-Z0-9.]/g, '')}`;
-            const { data, error } = await supabaseClient.storage
-                .from('product-images')
-                .upload(fileName, file, {
-                    cacheControl: '3600',
-                    upsert: false
-                });
+        try {
+            const { error } = await supabaseClient
+                .from('orders')
+                .update({ 
+                    status: 'rejected',
+                    updated_at: new Date().toISOString()
+                })
+                .eq('id', orderId);
             
             if (error) throw error;
             
-            const { data: { publicUrl } } = supabaseClient.storage
-                .from('product-images')
-                .getPublicUrl(fileName);
+            // Create notification for customer
+            await createNotificationForCustomer(
+                orderId,
+                'rejected',
+                'Payment Not Received',
+                'Dear customer, we were unable to verify your payment. Please contact support or try again.'
+            );
             
-            imageUrls.push(publicUrl);
+            showNotification('Order Rejected', `Order ${orderId} has been rejected.`, 'success');
+            await renderOrders();
+            await updateStats();
+            
+        } catch (error) {
+            console.error('Error rejecting order:', error);
+            showNotification('Error', 'Failed to reject order.', 'error');
+        } finally {
+            showLoading(false);
+        }
+    }
+
+    async function createNotificationForCustomer(orderId, type, title, message) {
+        try {
+            const { data: order, error } = await supabaseClient
+                .from('orders')
+                .select('customer_email, customer_name')
+                .eq('id', orderId)
+                .single();
+            
+            if (error || !order) {
+                console.error('Could not find order:', error);
+                return;
+            }
+            
+            const { error: notifError } = await supabaseClient
+                .from('notifications')
+                .insert({
+                    user_email: order.customer_email,
+                    type: type,
+                    title: title,
+                    message: message,
+                    order_id: orderId,
+                    is_read: false,
+                    created_at: new Date().toISOString()
+                });
+            
+            if (notifError) {
+                console.error('Error creating notification:', notifError);
+            }
+            
+        } catch (error) {
+            console.error('Error in createNotificationForCustomer:', error);
+        }
+    }
+
+    function viewOrderDetails(orderId) {
+        const order = allOrders?.find(o => o.id === orderId);
+        if (!order) return;
+        
+        const itemsHtml = order.items.map((item) => {
+            const imageUrl = item.image && (item.image.startsWith('http') || item.image.startsWith('data:'))
+                ? item.image 
+                : 'data:image/svg+xml,<svg xmlns=%22http://www.w3.org/2000/svg%22 width=%2260%22 height=%2260%22><rect fill=%22%23f9f5f2%22 width=%2260%22 height=%2260%22/><text fill=%22%236F4D38%22 x=%2230%22 y=%2235%22 font-size=%2220%22 text-anchor=%22middle%22>👕</text></svg>';
+            
+            return `
+            <div style="display: flex; gap: 12px; padding: 12px; background: #f8f9fa; border-radius: 8px; margin-bottom: 8px;">
+                <img src="${imageUrl}" 
+                     alt="${item.name}" 
+                     style="width: 60px; height: 60px; object-fit: cover; border-radius: 6px; border: 1px solid #e0e0e0;"
+                     onerror="this.src='data:image/svg+xml,<svg xmlns=%22http://www.w3.org/2000/svg%22 width=%2260%22 height=%2260%22><rect fill=%22%23f9f5f2%22 width=%2260%22 height=%2260%22/><text fill=%22%236F4D38%22 x=%2230%22 y=%2235%22 font-size=%2220%22 text-anchor=%22middle%22>👕</text></svg>'">
+                <div style="flex: 1;">
+                    <div style="font-weight: 600;">${item.name}</div>
+                    <div style="font-size: 13px; color: #6c757d;">
+                        Qty: ${item.quantity}${item.size ? ` | Size: ${item.size}` : ''}${item.color ? ` | Color: ${item.color}` : ''}
+                    </div>
+                    <div style="font-weight: 500; color: #6F4D38;">₦${parseFloat(item.price).toLocaleString()} each</div>
+                </div>
+            </div>
+        `}).join('');
+
+        const modalHtml = `
+            <div class="modal-overlay active" id="orderDetailsModal" onclick="if(event.target===this)closeOrderDetails()">
+                <div class="modal" style="max-width: 600px; max-height: 90vh; overflow-y: auto;">
+                    <div class="modal-header">
+                        <h3 class="modal-title">Order Details - ${order.id}</h3>
+                        <button class="modal-close" onclick="closeOrderDetails()">
+                            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                                <line x1="18" y1="6" x2="6" y2="18"></line>
+                                <line x1="6" y1="6" x2="18" y2="18"></line>
+                            </svg>
+                        </button>
+                    </div>
+                    <div class="modal-body">
+                        <div style="margin-bottom: 20px;">
+                            <div style="display: flex; justify-content: space-between; margin-bottom: 16px;">
+                                <div>
+                                    <div style="font-size: 12px; color: #6c757d; text-transform: uppercase;">Customer</div>
+                                    <div style="font-weight: 600; font-size: 16px;">${order.customer_name || 'Guest'}</div>
+                                    <div style="font-size: 13px; color: #6c757d;">${order.customer_email || ''}</div>
+                                </div>
+                                <div style="text-align: right;">
+                                    <div style="font-size: 12px; color: #6c757d; text-transform: uppercase;">Order Date</div>
+                                    <div style="font-weight: 500;">${new Date(order.created_at).toLocaleDateString('en-NG')}</div>
+                                </div>
+                            </div>
+                            
+                            <div style="font-size: 12px; color: #6c757d; text-transform: uppercase; margin-bottom: 8px;">Status</div>
+                            <span class="status-badge ${getStatusClass(order.status)}" style="margin-bottom: 20px; display: inline-block;">
+                                ${formatStatus(order.status)}
+                            </span>
+                            
+                            ${order.inventory_status ? `
+                            <div style="margin-top: 12px;">
+                                <div style="font-size: 12px; color: #6c757d; text-transform: uppercase; margin-bottom: 8px;">Inventory Status</div>
+                                <span class="status-badge ${getInventoryStatusClass(order.inventory_status)}" style="display: inline-block;">
+                                    ${formatInventoryStatus(order.inventory_status)}
+                                </span>
+                                ${order.inventory_updated_at ? `
+                                <div style="font-size: 12px; color: #6c757d; margin-top: 4px;">
+                                    Last updated: ${new Date(order.inventory_updated_at).toLocaleString('en-NG')}
+                                </div>
+                                ` : ''}
+                            </div>
+                            ` : ''}
+                        </div>
+                        
+                        <div style="margin-bottom: 20px;">
+                            <div style="font-size: 12px; color: #6c757d; text-transform: uppercase; margin-bottom: 12px;">Items</div>
+                            ${itemsHtml}
+                        </div>
+                        
+                        <div style="background: #f8f9fa; padding: 16px; border-radius: 8px;">
+                            <div style="display: flex; justify-content: space-between; padding-top: 12px; border-top: 1px solid #dee2e6;">
+                                <span style="font-weight: 600;">Total</span>
+                                <span style="font-weight: 700; color: #6F4D38; font-size: 18px;">₦${parseFloat(order.total_amount).toLocaleString()}</span>
+                            </div>
+                        </div>
+                        
+                        ${order.bank_details ? `
+                        <div style="margin-top: 20px; padding: 16px; background: #e8f5e9; border-radius: 8px;">
+                            <div style="font-size: 12px; color: #28a745; text-transform: uppercase; margin-bottom: 8px;">Payment Information</div>
+                            <div style="font-size: 14px;">
+                                <div><strong>Bank:</strong> ${order.bank_details.bank}</div>
+                                <div><strong>Account:</strong> ${order.bank_details.account}</div>
+                                <div><strong>Name:</strong> ${order.bank_details.name}</div>
+                            </div>
+                        </div>
+                        ` : ''}
+                    </div>
+                    <div class="modal-footer">
+                        <button class="btn btn-secondary" onclick="closeOrderDetails()">Close</button>
+                        ${order.status === 'pending' || order.status === 'submitted' ? `
+                            <button class="btn btn-danger" onclick="rejectOrder('${order.id}'); closeOrderDetails();">Reject</button>
+                            <button class="btn btn-success" onclick="acceptOrder('${order.id}'); closeOrderDetails();">Accept Order</button>
+                        ` : ''}
+                    </div>
+                </div>
+            </div>
+        `;
+        
+        const existingModal = document.getElementById('orderDetailsModal');
+        if (existingModal) existingModal.remove();
+        
+        document.body.insertAdjacentHTML('beforeend', modalHtml);
+        document.body.style.overflow = 'hidden';
+    }
+
+    function closeOrderDetails() {
+        const modal = document.getElementById('orderDetailsModal');
+        if (modal) {
+            modal.remove();
+            document.body.style.overflow = '';
+        }
+    }
+
+    function filterOrders() {
+        const search = document.getElementById('orderSearch')?.value.toLowerCase() || '';
+        const status = document.getElementById('orderStatusFilter')?.value || '';
+        
+        if (!allOrders) return;
+        
+        const filtered = allOrders.filter(order => {
+            const matchesSearch = !search || 
+                order.id.toLowerCase().includes(search) || 
+                (order.customer_name && order.customer_name.toLowerCase().includes(search)) ||
+                (order.items && order.items.some(item => item.name.toLowerCase().includes(search)));
+            
+            const matchesStatus = !status || order.status === status;
+            
+            return matchesSearch && matchesStatus;
+        });
+        
+        displayOrders(filtered);
+    }
+
+    // ==================== PRODUCTS ====================
+
+    async function loadProducts() {
+        showLoading(true);
+        try {
+            const { data, error } = await supabaseClient
+                .from('products')
+                .select('*')
+                .eq('is_active', true)
+                .order('created_at', { ascending: false });
+            
+            if (error) throw error;
+            
+            products = data || [];
+            renderProducts();
+        } catch (error) {
+            console.error('Error loading products:', error);
+            showNotification('Error', 'Failed to load products', 'error');
+        } finally {
+            showLoading(false);
+        }
+    }
+
+    function renderProducts(productsToRender = products.filter(p => p.is_active !== false)) {
+        const tbody = document.getElementById('productsTable');
+        
+        if (productsToRender.length === 0) {
+            tbody.innerHTML = '<tr><td colspan="7" class="text-center">No products found</td></tr>';
+            return;
         }
         
-        const { data, error } = await supabaseClient
-            .from('products')
-            .insert({
-                name,
-                category,
-                price,
-                stock,
-                description,
-                sizes: selectedSizes,
-                colors: selectedColors,
-                images: imageUrls,
-                rating: 4.5,
-                reviews: 0
-            })
-            .select();
-        
-        if (error) throw error;
-        
-        showNotification('Success', 'Product added successfully', 'success');
-        closeModal('addProductModal');
-        resetAddForm();
-        await loadProducts();
-        
-    } catch (error) {
-        console.error('Error adding product:', error);
-        showNotification('Error', error.message || 'Failed to add product', 'error');
-    } finally {
-        showLoading(false);
-        document.getElementById('addProductBtn').disabled = false;
+        tbody.innerHTML = productsToRender.map(product => {
+            const mainImage = product.images && product.images.length > 0 
+                ? product.images[0] 
+                : 'data:image/svg+xml,<svg xmlns="http://www.w3.org/2000/svg" width="100" height="100"><rect fill="%23f9f5f2" width="100" height="100"/><text fill="%236F4D38" x="50" y="55" font-size="30" text-anchor="middle">👕</text></svg>';
+            
+            const status = product.stock === 0 ? 'outstock' : product.stock < 10 ? 'low' : 'instock';
+            const statusText = product.stock === 0 ? 'Out of Stock' : product.stock < 10 ? 'Low Stock' : 'In Stock';
+            
+            return `
+                <tr>
+                    <td><img src="${mainImage}" alt="${product.name}" class="product-image-preview"></td>
+                    <td>${product.name}</td>
+                    <td>${product.category}</td>
+                    <td>₦${parseFloat(product.price).toLocaleString()}</td>
+                    <td>${product.stock}</td>
+                    <td><span class="status-badge status-${status}">${statusText}</span></td>
+                    <td>
+                        <div class="action-btns">
+                            <button class="action-btn edit" onclick="editProduct(${product.id})">
+                                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                                    <path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"></path>
+                                    <path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"></path>
+                                </svg>
+                            </button>
+                            <button class="action-btn delete" onclick="deleteProduct(${product.id})">
+                                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                                    <polyline points="3 6 5 6 21 6"></polyline>
+                                    <path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"></path>
+                                </svg>
+                            </button>
+                        </div>
+                    </td>
+                </tr>
+            `;
+        }).join('');
     }
-}
 
-async function editProduct(id) {
-    const product = products.find(p => p.id === id);
-    if (!product) return;
-    
-    currentEditId = id;
-    editExistingImages = [...(product.images || [])];
-    editNewImages = [];
-    editSelectedSizes = [...(product.sizes || [])];
-    editSelectedColors = [...(product.colors || [])];
-    
-    document.getElementById('editProductId').value = id;
-    document.getElementById('editProductName').value = product.name;
-    document.getElementById('editProductCategory').value = product.category;
-    document.getElementById('editProductPrice').value = product.price;
-    document.getElementById('editProductStock').value = product.stock;
-    document.getElementById('editProductDescription').value = product.description || '';
-    
-    updateEditExistingPreview();
-    
-    document.querySelectorAll('#editSizeOptions .size-option').forEach(el => {
-        el.classList.toggle('active', editSelectedSizes.includes(el.dataset.size));
-    });
-    
-    document.querySelectorAll('#editColorOptions .color-option').forEach(el => {
-        el.classList.toggle('active', editSelectedColors.includes(el.dataset.color));
-    });
-    
-    openModal('editProductModal');
-}
-
-async function saveProductEdit() {
-    const name = document.getElementById('editProductName').value;
-    const price = parseFloat(document.getElementById('editProductPrice').value);
-    const stock = parseInt(document.getElementById('editProductStock').value);
-    const category = document.getElementById('editProductCategory').value;
-    const description = document.getElementById('editProductDescription').value;
-    
-    if (!name || !price || !stock || !category) {
-        showNotification('Error', 'Please fill in all required fields', 'error');
-        return;
-    }
-    
-    showLoading(true);
-    document.getElementById('editProductBtn').disabled = true;
-    
-    try {
-        let allImages = [...editExistingImages];
+    async function renderDashboard() {
+        await updateStats();
         
-        if (editNewImages.length > 0) {
-            for (const file of editNewImages) {
+        try {
+            const { data: recentOrders, error } = await supabaseClient
+                .from('orders')
+                .select('*')
+                .order('created_at', { ascending: false })
+                .limit(5);
+            
+            if (error) throw error;
+            
+            const tbody = document.getElementById('recentOrdersTable');
+            if (!tbody) return;
+            
+            if (!recentOrders || recentOrders.length === 0) {
+                tbody.innerHTML = '<tr><td colspan="5" class="text-center">No recent orders</td></tr>';
+                return;
+            }
+            
+            tbody.innerHTML = recentOrders.map(order => {
+                const firstItem = order.items && order.items.length > 0 ? order.items[0] : null;
+                const itemName = firstItem ? firstItem.name : 'N/A';
+                const itemCount = order.items ? order.items.length : 0;
+                const displayProduct = itemCount > 1 ? `${itemName} (+${itemCount - 1})` : itemName;
+                
+                const customerInitials = getInitials(order.customer_name);
+                
+                return `
+                    <tr>
+                        <td>
+                            <div style="display: flex; align-items: center; gap: 8px;">
+                                <span style="font-weight: 600; color: #6F4D38;">${order.id}</span>
+                            </div>
+                        </td>
+                        <td>
+                            <div style="display: flex; align-items: center; gap: 10px;">
+                                <div class="customer-avatar" style="width: 32px; height: 32px; font-size: 12px; background: linear-gradient(135deg, #6F4D38 0%, #8B6F5C 100%); color: white; border-radius: 50%; display: flex; align-items: center; justify-content: center; font-weight: 600; flex-shrink: 0;">
+                                    ${customerInitials}
+                                </div>
+                                <span>${order.customer_name || 'Guest'}</span>
+                            </div>
+                        </td>
+                        <td>${displayProduct}</td>
+                        <td>₦${parseFloat(order.total_amount).toLocaleString()}</td>
+                        <td><span class="status-badge ${getStatusClass(order.status)}">${formatStatus(order.status)}</span></td>
+                    </tr>
+                `;
+            }).join('');
+            
+        } catch (error) {
+            console.error('Error loading recent orders:', error);
+            const tbody = document.getElementById('recentOrdersTable');
+            if (tbody) {
+                tbody.innerHTML = '<tr><td colspan="5" class="text-center">Failed to load orders</td></tr>';
+            }
+        }
+    }
+
+    async function updateStats() {
+        try {
+            const { count: productsCount } = await supabaseClient
+                .from('products')
+                .select('*', { count: 'exact', head: true })
+                .eq('is_active', true);
+            
+            const { data: orders } = await supabaseClient
+                .from('orders')
+                .select('status, total_amount');
+            
+            if (orders) {
+                const pendingCount = orders.filter(o => o.status === 'pending' || o.status === 'submitted').length;
+                const totalRevenue = orders
+                    .filter(o => o.status === 'paid' || o.status === 'delivered')
+                    .reduce((sum, o) => sum + parseFloat(o.total_amount), 0);
+                
+                document.getElementById('statOrders').textContent = orders.length;
+                document.getElementById('statPending').textContent = pendingCount;
+                document.getElementById('statRevenue').textContent = '₦' + totalRevenue.toLocaleString();
+            }
+            
+            document.getElementById('statProducts').textContent = productsCount || 0;
+            
+            const pendingPayments = orders?.filter(o => o.status === 'pending' || o.status === 'submitted').length || 0;
+            const badge = document.getElementById('notificationBadge');
+            if (badge) {
+                badge.textContent = pendingPayments;
+                badge.style.display = pendingPayments > 0 ? 'flex' : 'none';
+            }
+            
+        } catch (error) {
+            console.error('Error updating stats:', error);
+        }
+    }
+
+    async function addProduct() {
+        const name = document.getElementById('productName').value;
+        const price = parseFloat(document.getElementById('productPrice').value);
+        const stock = parseInt(document.getElementById('productStock').value);
+        const category = document.getElementById('productCategory').value;
+        const description = document.getElementById('productDescription').value;
+        
+        if (!name || !price || !stock || !category) {
+            showNotification('Error', 'Please fill in all required fields', 'error');
+            return;
+        }
+        
+        if (selectedImages.length === 0) {
+            showNotification('Error', 'Please upload at least one image', 'error');
+            return;
+        }
+        
+        showLoading(true);
+        document.getElementById('addProductBtn').disabled = true;
+        
+        try {
+            const imageUrls = [];
+            for (const file of selectedImages) {
                 const fileName = `${Date.now()}-${file.name.replace(/[^a-zA-Z0-9.]/g, '')}`;
                 const { data, error } = await supabaseClient.storage
                     .from('product-images')
@@ -2518,184 +2797,251 @@ async function saveProductEdit() {
                     .from('product-images')
                     .getPublicUrl(fileName);
                 
-                allImages.push(publicUrl);
+                imageUrls.push(publicUrl);
             }
+            
+            const { data, error } = await supabaseClient
+                .from('products')
+                .insert({
+                    name,
+                    category,
+                    price,
+                    stock,
+                    description,
+                    sizes: selectedSizes,
+                    colors: selectedColors,
+                    images: imageUrls,
+                    rating: 4.5,
+                    reviews: 0
+                })
+                .select();
+            
+            if (error) throw error;
+            
+            showNotification('Success', 'Product added successfully', 'success');
+            closeModal('addProductModal');
+            resetAddForm();
+            await loadProducts();
+            
+        } catch (error) {
+            console.error('Error adding product:', error);
+            showNotification('Error', error.message || 'Failed to add product', 'error');
+        } finally {
+            showLoading(false);
+            document.getElementById('addProductBtn').disabled = false;
         }
-        
-        const { error } = await supabaseClient
-            .from('products')
-            .update({
-                name,
-                category,
-                price,
-                stock,
-                description,
-                sizes: editSelectedSizes,
-                colors: editSelectedColors,
-                images: allImages,
-                updated_at: new Date().toISOString()
-            })
-            .eq('id', currentEditId);
-        
-        if (error) throw error;
-        
-        showNotification('Success', 'Product updated successfully', 'success');
-        closeModal('editProductModal');
-        await loadProducts();
-        
-    } catch (error) {
-        console.error('Error updating product:', error);
-        showNotification('Error', error.message || 'Failed to update product', 'error');
-    } finally {
-        showLoading(false);
-        document.getElementById('editProductBtn').disabled = false;
     }
-}
 
-async function deleteProduct(id) {
-    if (!confirm('Are you sure you want to delete this product?')) return;
-    
-    showLoading(true);
-    try {
-        const { error } = await supabaseClient
-            .from('products')
-            .delete()
-            .eq('id', id);
+    async function editProduct(id) {
+        const product = products.find(p => p.id === id);
+        if (!product) return;
         
-        if (error) throw error;
+        currentEditId = id;
+        editExistingImages = [...(product.images || [])];
+        editNewImages = [];
+        editSelectedSizes = [...(product.sizes || [])];
+        editSelectedColors = [...(product.colors || [])];
         
-        showNotification('Success', 'Product deleted successfully', 'success');
-        await loadProducts();
-    } catch (error) {
-        console.error('Error deleting product:', error);
-        showNotification('Error', error.message || 'Failed to delete product', 'error');
-    } finally {
-        showLoading(false);
+        document.getElementById('editProductId').value = id;
+        document.getElementById('editProductName').value = product.name;
+        document.getElementById('editProductCategory').value = product.category;
+        document.getElementById('editProductPrice').value = product.price;
+        document.getElementById('editProductStock').value = product.stock;
+        document.getElementById('editProductDescription').value = product.description || '';
+        
+        updateEditExistingPreview();
+        
+        document.querySelectorAll('#editSizeOptions .size-option').forEach(el => {
+            el.classList.toggle('active', editSelectedSizes.includes(el.dataset.size));
+        });
+        
+        document.querySelectorAll('#editColorOptions .color-option').forEach(el => {
+            el.classList.toggle('active', editSelectedColors.includes(el.dataset.color));
+        });
+        
+        openModal('editProductModal');
     }
-}
 
-// Add this function to create notifications for customers
-async function createNotificationForCustomer(orderId, type, title, message) {
-    try {
-        // Get order details first
-        const { data: order, error: orderError } = await supabaseClient
-            .from('orders')
-            .select('customer_email, customer_name')
-            .eq('id', orderId)
-            .single();
+    async function saveProductEdit() {
+        const name = document.getElementById('editProductName').value;
+        const price = parseFloat(document.getElementById('editProductPrice').value);
+        const stock = parseInt(document.getElementById('editProductStock').value);
+        const category = document.getElementById('editProductCategory').value;
+        const description = document.getElementById('editProductDescription').value;
         
-        if (orderError || !order) {
-            console.error('Could not find order:', orderError);
+        if (!name || !price || !stock || !category) {
+            showNotification('Error', 'Please fill in all required fields', 'error');
             return;
         }
         
-        // Create notification
-        const { error } = await supabaseClient
-            .from('notifications')
-            .insert({
-                user_email: order.customer_email,
-                type: type, // 'accepted', 'rejected', 'pending'
-                title: title,
-                message: message,
-                order_id: orderId,
-                is_read: false
-            });
+        showLoading(true);
+        document.getElementById('editProductBtn').disabled = true;
         
-        if (error) {
-            console.error('Error creating notification:', error);
-        } else {
-            console.log('Notification created successfully for', order.customer_email);
+        try {
+            let allImages = [...editExistingImages];
+            
+            if (editNewImages.length > 0) {
+                for (const file of editNewImages) {
+                    const fileName = `${Date.now()}-${file.name.replace(/[^a-zA-Z0-9.]/g, '')}`;
+                    const { data, error } = await supabaseClient.storage
+                        .from('product-images')
+                        .upload(fileName, file, {
+                            cacheControl: '3600',
+                            upsert: false
+                        });
+                    
+                    if (error) throw error;
+                    
+                    const { data: { publicUrl } } = supabaseClient.storage
+                        .from('product-images')
+                        .getPublicUrl(fileName);
+                    
+                    allImages.push(publicUrl);
+                }
+            }
+            
+            const { error } = await supabaseClient
+                .from('products')
+                .update({
+                    name,
+                    category,
+                    price,
+                    stock,
+                    description,
+                    sizes: editSelectedSizes,
+                    colors: editSelectedColors,
+                    images: allImages,
+                    updated_at: new Date().toISOString()
+                })
+                .eq('id', currentEditId);
+            
+            if (error) throw error;
+            
+            showNotification('Success', 'Product updated successfully', 'success');
+            closeModal('editProductModal');
+            await loadProducts();
+            
+        } catch (error) {
+            console.error('Error updating product:', error);
+            showNotification('Error', error.message || 'Failed to update product', 'error');
+        } finally {
+            showLoading(false);
+            document.getElementById('editProductBtn').disabled = false;
         }
+    }
+
+    async function deleteProduct(id) {
+        if (!confirm('Are you sure you want to delete this product?')) return;
         
-    } catch (error) {
-        console.error('Error in createNotificationForCustomer:', error);
+        showLoading(true);
+        try {
+            const { error } = await supabaseClient
+                .from('products')
+                .delete()
+                .eq('id', id);
+            
+            if (error) throw error;
+            
+            showNotification('Success', 'Product deleted successfully', 'success');
+            await loadProducts();
+        } catch (error) {
+            console.error('Error deleting product:', error);
+            showNotification('Error', error.message || 'Failed to delete product', 'error');
+        } finally {
+            showLoading(false);
+        }
     }
-}
 
-function filterProducts() {
-    const search = document.getElementById('productSearch').value.toLowerCase();
-    const filtered = products.filter(p => 
-        p.name.toLowerCase().includes(search) || 
-        p.category.toLowerCase().includes(search)
-    );
-    renderProducts(filtered);
-}
-
-function resetAddForm() {
-    document.getElementById('addProductForm').reset();
-    selectedImages = [];
-    selectedSizes = [];
-    selectedColors = [];
-    updateImagePreview();
-    document.querySelectorAll('#sizeOptions .size-option').forEach(el => el.classList.remove('active'));
-    document.querySelectorAll('#colorOptions .color-option').forEach(el => el.classList.remove('active'));
-}
-
-// UI Helpers
-function openModal(modalId) {
-    document.getElementById(modalId).classList.add('active');
-    document.body.style.overflow = 'hidden';
-}
-
-function closeModal(modalId) {
-    document.getElementById(modalId).classList.remove('active');
-    document.body.style.overflow = '';
-}
-
-function showLoading(show) {
-    const overlay = document.getElementById('loadingOverlay');
-    if (show) {
-        overlay.classList.add('active');
-    } else {
-        overlay.classList.remove('active');
+    function filterProducts() {
+        const search = document.getElementById('productSearch').value.toLowerCase();
+        const filtered = products.filter(p => 
+            p.name.toLowerCase().includes(search) || 
+            p.category.toLowerCase().includes(search)
+        );
+        renderProducts(filtered);
     }
-}
 
-
-function showNotification(title, message, type) {
-    const container = document.getElementById('notificationContainer');
-    const notification = document.createElement('div');
-    notification.className = `notification ${type}`;
-    
-    const icon = type === 'success' 
-        ? '<svg class="notification-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M22 11.08V12a10 10 0 1 1-5.93-9.14"></path><polyline points="22 4 12 14.01 9 11.01"></polyline></svg>'
-        : '<svg class="notification-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"></circle><line x1="15" y1="9" x2="9" y2="15"></line><line x1="9" y1="9" x2="15" y2="15"></line></svg>';
-    
-    notification.innerHTML = `
-        ${icon}
-        <div class="notification-content">
-            <div class="notification-title">${title}</div>
-            <div class="notification-message">${message}</div>
-        </div>
-        <button class="notification-close" onclick="this.parentElement.remove()">
-            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-                <line x1="18" y1="6" x2="6" y2="18"></line>
-                <line x1="6" y1="6" x2="18" y2="18"></line>
-            </svg>
-        </button>
-    `;
-    
-    container.appendChild(notification);
-    setTimeout(() => notification.remove(), 5000);
-}
-
-function formatAdminName(email) {
-    if (!email) return "Admin";
-    let namePart = email.split('@')[0].toLowerCase();
-    const specialCases = {
-        "macaulayroyal17": "Macaulay Royal",
-        "macaulayroyal": "Macaulay Royal",
-        "oleahisah": "Oleah Isah"
-    };
-    if (specialCases[namePart]) {
-        return specialCases[namePart];
+    function resetAddForm() {
+        document.getElementById('addProductForm').reset();
+        selectedImages = [];
+        selectedSizes = [];
+        selectedColors = [];
+        updateImagePreview();
+        document.querySelectorAll('#sizeOptions .size-option').forEach(el => el.classList.remove('active'));
+        document.querySelectorAll('#colorOptions .color-option').forEach(el => el.classList.remove('active'));
     }
-    let cleanName = namePart.replace(/[0-9]/g, '').replace(/[._]/g, ' ').trim();
-    return cleanName
-        .split(/\s+/)
-        .map(word => word.charAt(0).toUpperCase() + word.slice(1))
-        .join(' ');
-}
+
+    // UI Helpers
+    function openModal(modalId) {
+        document.getElementById(modalId).classList.add('active');
+        document.body.style.overflow = 'hidden';
+    }
+
+    function closeModal(modalId) {
+        document.getElementById(modalId).classList.remove('active');
+        document.body.style.overflow = '';
+    }
+
+    function showLoading(show) {
+        const overlay = document.getElementById('loadingOverlay');
+        if (show) {
+            overlay.classList.add('active');
+        } else {
+            overlay.classList.remove('active');
+        }
+    }
+
+    function showNotification(title, message, type) {
+        const container = document.getElementById('notificationContainer');
+        const notification = document.createElement('div');
+        notification.className = `notification ${type}`;
+        
+        const icon = type === 'success' 
+            ? '<svg class="notification-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M22 11.08V12a10 10 0 1 1-5.93-9.14"></path><polyline points="22 4 12 14.01 9 11.01"></polyline></svg>'
+            : '<svg class="notification-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"></circle><line x1="15" y1="9" x2="9" y2="15"></line><line x1="9" y1="9" x2="15" y2="15"></line></svg>';
+        
+        notification.innerHTML = `
+            ${icon}
+            <div class="notification-content">
+                <div class="notification-title">${title}</div>
+                <div class="notification-message">${message}</div>
+            </div>
+            <button class="notification-close" onclick="this.parentElement.remove()">
+                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                    <line x1="18" y1="6" x2="6" y2="18"></line>
+                    <line x1="6" y1="6" x2="18" y2="18"></line>
+                </svg>
+            </button>
+        `;
+        
+        container.appendChild(notification);
+        setTimeout(() => notification.remove(), 5000);
+    }
+
+    function formatAdminName(email) {
+        if (!email) return "Admin";
+        let namePart = email.split('@')[0].toLowerCase();
+        const specialCases = {
+            "macaulayroyal17": "Macaulay Royal",
+            "macaulayroyal": "Macaulay Royal",
+            "oleahisah": "Oleah Isah"
+        };
+        if (specialCases[namePart]) {
+            return specialCases[namePart];
+        }
+        let cleanName = namePart.replace(/[0-9]/g, '').replace(/[._]/g, ' ').trim();
+        return cleanName
+            .split(/\s+/)
+            .map(word => word.charAt(0).toUpperCase() + word.slice(1))
+            .join(' ');
+    }
+
+    // Cleanup on page unload
+    window.addEventListener('beforeunload', () => {
+        if (realtimeSubscription) {
+            supabaseClient.removeChannel(realtimeSubscription);
+        }
+    });
 </script>
 </body>
 </html>
