@@ -1728,22 +1728,84 @@ Account Number: 1234567890</textarea>
     }
 
     // Realtime subscription for notifications
-    function setupRealtimeSubscription() {
-        realtimeSubscription = supabaseClient
-            .channel('orders-channel')
-            .on('postgres_changes', {
-                event: '*',
-                schema: 'public',
-                table: 'orders'
-            }, (payload) => {
-                console.log('Order change received:', payload);
-                // Refresh data when orders change
-                if (currentPage === 'orders') renderOrders();
-                if (currentPage === 'inventory') renderInventory();
-                updateStats();
-            })
-            .subscribe();
-    }
+  function setupRealtimeSubscription() {
+    // Subscribe to orders channel for inventory updates
+    const ordersChannel = supabaseClient
+        .channel('dashboard-orders')
+        .on('postgres_changes', {
+            event: 'UPDATE',
+            schema: 'public',
+            table: 'orders'
+        }, (payload) => {
+            console.log('Order updated:', payload);
+            // Refresh inventory if we're on that page
+            if (currentPage === 'inventory') {
+                renderInventory();
+            }
+            // Refresh orders if on orders page
+            if (currentPage === 'orders') {
+                renderOrders();
+            }
+            // Always update stats
+            updateStats();
+        })
+        .on('postgres_changes', {
+            event: 'INSERT',
+            schema: 'public',
+            table: 'orders'
+        }, (payload) => {
+            console.log('New order:', payload);
+            updateStats();
+            if (currentPage === 'orders') {
+                renderOrders();
+            }
+        })
+        .subscribe();
+
+    // Subscribe to inventory table changes
+    const inventoryChannel = supabaseClient
+        .channel('dashboard-inventory')
+        .on('postgres_changes', {
+            event: 'UPDATE',
+            schema: 'public',
+            table: 'inventory'
+        }, (payload) => {
+            console.log('Inventory updated:', payload);
+            if (currentPage === 'inventory') {
+                renderInventory();
+            }
+        })
+        .on('postgres_changes', {
+            event: 'INSERT',
+            schema: 'public',
+            table: 'inventory'
+        }, (payload) => {
+            console.log('New inventory item:', payload);
+            if (currentPage === 'inventory') {
+                renderInventory();
+            }
+        })
+        .subscribe();
+    
+    // Store both subscriptions
+    realtimeSubscription = [ordersChannel, inventoryChannel];
+}   
+    // Also listen to inventory table changes
+    const inventoryChannel = supabaseClient
+        .channel('inventory-channel')
+        .on('postgres_changes', {
+            event: 'UPDATE',
+            schema: 'public',
+            table: 'inventory'
+        }, (payload) => {
+            console.log('Inventory updated:', payload);
+            if (currentPage === 'inventory') renderInventory();
+        })
+        .subscribe();
+    
+    // Store both subscriptions
+    realtimeSubscription = [ordersChannel, inventoryChannel];
+
 
     // Sidebar Functions
     function toggleSidebar() {
@@ -1977,15 +2039,20 @@ Account Number: 1234567890</textarea>
     }
 }
 
-   function displayInventory(items) {
+ function displayInventory(items) {
     const tbody = document.getElementById('inventoryTable');
     if (!tbody) return;
+    
+    if (!items || items.length === 0) {
+        tbody.innerHTML = '<tr><td colspan="6" class="text-center">No items in inventory</td></tr>';
+        return;
+    }
     
     tbody.innerHTML = items.map(item => {
         const statusClass = getInventoryStatusClass(item.current_status);
         const statusText = formatInventoryStatus(item.current_status);
         
-        const lastUpdated = new Date(item.status_updated_at).toLocaleString('en-NG');
+        const lastUpdated = new Date(item.status_updated_at || item.updated_at).toLocaleString('en-NG');
         
         return `
             <tr>
@@ -2012,6 +2079,24 @@ Account Number: 1234567890</textarea>
             </tr>
         `;
     }).join('');
+}
+
+function filterInventory() {
+    const search = document.getElementById('inventorySearch')?.value.toLowerCase() || '';
+    const status = document.getElementById('inventoryStatusFilter')?.value || '';
+    
+    let filtered = inventoryOrders.filter(item => {
+        const matchesSearch = !search || 
+            item.order_id.toLowerCase().includes(search) || 
+            (item.customer_name && item.customer_name.toLowerCase().includes(search)) ||
+            (item.product_name && item.product_name.toLowerCase().includes(search));
+        
+        const matchesStatus = !status || item.current_status === status;
+        
+        return matchesSearch && matchesStatus;
+    });
+    
+    displayInventory(filtered);
 }
 
     function getInventoryStatusClass(status) {
@@ -3037,11 +3122,17 @@ async function createInventoryRecord(orderId, customerEmail, customerName, items
     }
 
     // Cleanup on page unload
-    window.addEventListener('beforeunload', () => {
-        if (realtimeSubscription) {
+   window.addEventListener('beforeunload', () => {
+    if (realtimeSubscription) {
+        if (Array.isArray(realtimeSubscription)) {
+            realtimeSubscription.forEach(sub => {
+                supabaseClient.removeChannel(sub);
+            });
+        } else {
             supabaseClient.removeChannel(realtimeSubscription);
         }
-    });
+    }
+});
 </script>
 </body>
 </html>

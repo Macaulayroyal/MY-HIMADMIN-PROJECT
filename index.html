@@ -166,8 +166,6 @@
     const SUPABASE_ANON_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImRkcmhwamlhb3R3dGJsbmxxeXR3Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzI3NTI0MjMsImV4cCI6MjA4ODMyODQyM30.GNb6OTErsgNbb0PlEysXD7BtUhkjk0ldQCPbO_5EsKU';
     const _supabase = supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
 
-    const ADMIN_EMAIL = "macaulayroyal17@gmail.com";
-
     // 1. Handle Profile Image Selection & Preview
     async function handleImageSelect(event) {
         const file = event.target.files[0];
@@ -197,11 +195,6 @@
         const password = document.getElementById('loginPassword').value;
         const btn = document.getElementById('loginBtn');
 
-        if (email !== ADMIN_EMAIL) {
-            alert("Unauthorized Email.");
-            return;
-        }
-
         btn.innerText = "Verifying...";
 
         // Step A: Auth Sign In
@@ -215,7 +208,7 @@
             return;
         }
 
-        // Step B: Check Admin Table
+        // Step B: Check Admin Table (allows ANY email in admins table)
         const { data: adminCheck, error: tableError } = await _supabase
             .from('admins')
             .select('email')
