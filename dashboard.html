@@ -2138,7 +2138,7 @@ function filterInventory() {
         
         if (inventoryError) throw inventoryError;
         
-        // 2. ALSO UPDATE orders table - this is what user's page reads!
+        // 2. ALSO UPDATE orders table
         const { error: orderError } = await supabaseClient
             .from('orders')
             .update({ 
@@ -2151,12 +2151,60 @@ function filterInventory() {
         
         if (orderError) throw orderError;
         
-        // 3. Create notification for customer
-        await createInventoryNotification(orderId, newStatus);
+        // 3. Get order details for notification
+        const { data: order, error: getError } = await supabaseClient
+            .from('orders')
+            .select('customer_email, customer_name')
+            .eq('id', orderId)
+            .single();
+        
+        if (getError) {
+            console.error('Could not find order for notification:', getError);
+        } else if (order && order.customer_email) {
+            // 4. Create notification for customer
+            const statusMessages = {
+                'packaging': {
+                    title: 'Order Being Packaged',
+                    message: `Dear ${order.customer_name || 'Customer'}, your order ${orderId} is currently being packaged.`
+                },
+                'shipping': {
+                    title: 'Order Shipped',
+                    message: `Dear ${order.customer_name || 'Customer'}, great news! Your order ${orderId} has been shipped.`
+                },
+                'transferring': {
+                    title: 'Order In Transit',
+                    message: `Dear ${order.customer_name || 'Customer'}, your order ${orderId} is being transferred to your local delivery center.`
+                },
+                'delivered': {
+                    title: 'Order Delivered',
+                    message: `Dear ${order.customer_name || 'Customer'}, your order ${orderId} has been delivered! Thank you for shopping with HIM.CLOTHIERS.`
+                }
+            };
+            
+            const statusInfo = statusMessages[newStatus];
+            if (statusInfo) {
+                const { error: notifError } = await supabaseClient
+                    .from('notifications')
+                    .insert({
+                        user_email: order.customer_email,
+                        type: 'order_status',
+                        title: statusInfo.title,
+                        message: statusInfo.message,
+                        order_id: orderId,
+                        status: newStatus,
+                        is_read: false,
+                        created_at: now
+                    });
+                
+                if (notifError) {
+                    console.error('Error creating notification:', notifError);
+                } else {
+                    console.log('Status notification created for:', order.customer_email);
+                }
+            }
+        }
         
         showNotification('Success', `Status updated to ${formatInventoryStatus(newStatus)}`, 'success');
-        
-        // 4. Refresh both tables
         await renderInventory();
         
     } catch (error) {
@@ -2434,6 +2482,8 @@ async function createInventoryRecord(orderId, customerEmail, customerName, items
         
         if (getError) throw getError;
         
+        console.log('Accepting order:', orderId, 'for email:', order.customer_email);
+        
         // Update order status
         const { error } = await supabaseClient
             .from('orders')
@@ -2453,13 +2503,24 @@ async function createInventoryRecord(orderId, customerEmail, customerName, items
             order.items
         );
         
-        // Create notification
-        await createNotificationForCustomer(
-            orderId,
-            'accepted',
-            'Payment Confirmed',
-            'Dear customer we have verified your payment. Your order is now being packaged.'
-        );
+        // Create notification for customer - FIXED: use customer_email
+        const { error: notifError } = await supabaseClient
+            .from('notifications')
+            .insert({
+                user_email: order.customer_email,  // CRITICAL: Must match customer's email
+                type: 'accepted',
+                title: 'Payment Confirmed',
+                message: `Dear ${order.customer_name || 'Customer'}, your payment for order ${orderId} has been verified. Your order is now being packaged.`,
+                order_id: orderId,
+                is_read: false,
+                created_at: new Date().toISOString()
+            });
+        
+        if (notifError) {
+            console.error('Notification error:', notifError);
+        } else {
+            console.log('Notification created for:', order.customer_email);
+        }
         
         showNotification('Order Accepted', `Order ${orderId} has been accepted.`, 'success');
         await renderOrders();
@@ -2472,42 +2533,64 @@ async function createInventoryRecord(orderId, customerEmail, customerName, items
         showLoading(false);
     }
 }
-    async function rejectOrder(orderId) {
-        if (!confirm('Are you sure you want to REJECT this order?')) return;
-        
-        showLoading(true);
-        
-        try {
-            const { error } = await supabaseClient
-                .from('orders')
-                .update({ 
-                    status: 'rejected',
-                    updated_at: new Date().toISOString()
-                })
-                .eq('id', orderId);
-            
-            if (error) throw error;
-            
-            // Create notification for customer
-            await createNotificationForCustomer(
-                orderId,
-                'rejected',
-                'Payment Not Received',
-                'Dear customer, we were unable to verify your payment. Please contact support or try again.'
-            );
-            
-            showNotification('Order Rejected', `Order ${orderId} has been rejected.`, 'success');
-            await renderOrders();
-            await updateStats();
-            
-        } catch (error) {
-            console.error('Error rejecting order:', error);
-            showNotification('Error', 'Failed to reject order.', 'error');
-        } finally {
-            showLoading(false);
-        }
-    }
 
+async function rejectOrder(orderId) {
+    if (!confirm('Are you sure you want to REJECT this order?')) return;
+    
+    showLoading(true);
+    
+    try {
+        // Get order details first
+        const { data: order, error: getError } = await supabaseClient
+            .from('orders')
+            .select('*')
+            .eq('id', orderId)
+            .single();
+        
+        if (getError) throw getError;
+        
+        console.log('Rejecting order:', orderId, 'for email:', order.customer_email);
+        
+        const { error } = await supabaseClient
+            .from('orders')
+            .update({ 
+                status: 'rejected',
+                updated_at: new Date().toISOString()
+            })
+            .eq('id', orderId);
+        
+        if (error) throw error;
+        
+        // Create notification for customer - FIXED
+        const { error: notifError } = await supabaseClient
+            .from('notifications')
+            .insert({
+                user_email: order.customer_email,  // CRITICAL: Must match customer's email
+                type: 'rejected',
+                title: 'Payment Not Received',
+                message: `Dear ${order.customer_name || 'Customer'}, we were unable to verify your payment for order ${orderId}. Please contact support.`,
+                order_id: orderId,
+                is_read: false,
+                created_at: new Date().toISOString()
+            });
+        
+        if (notifError) {
+            console.error('Notification error:', notifError);
+        } else {
+            console.log('Rejection notification created for:', order.customer_email);
+        }
+        
+        showNotification('Order Rejected', `Order ${orderId} has been rejected.`, 'success');
+        await renderOrders();
+        await updateStats();
+        
+    } catch (error) {
+        console.error('Error rejecting order:', error);
+        showNotification('Error', 'Failed to reject order.', 'error');
+    } finally {
+        showLoading(false);
+    }
+}
     async function createNotificationForCustomer(orderId, type, title, message) {
         try {
             const { data: order, error } = await supabaseClient
