@@ -2390,7 +2390,8 @@ async function acceptOrder(orderId) {
         
         if (error) throw error;
         
-      
+        // 🔥 ADDED: Create inventory record for tracking
+        await createInventoryRecord(orderId, order.customer_email, order.customer_name, order.items);
         
         const { error: notifError } = await supabaseClient
             .from('notifications')
@@ -2421,7 +2422,6 @@ async function acceptOrder(orderId) {
         showLoading(false);
     }
 }
-
 async function rejectOrder(orderId) {
     if (!confirm('Are you sure you want to REJECT this order?')) return;
     
