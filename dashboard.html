@@ -2753,24 +2753,30 @@ async function updateStats() {
             .select('*', { count: 'exact', head: true })
             .eq('is_active', true);
         
-        const { data: orders } = await supabaseClient
-            .from('orders')
-            .select('status, total_amount');
-        
-        if (orders) {
-            const pendingCount = orders.filter(o => o.status === 'submitted').length;
-            const totalRevenue = orders
-                .filter(o => o.status === 'paid' || o.status === 'delivered')
-                .reduce((sum, o) => sum + parseFloat(o.total_amount), 0);
-            
-            document.getElementById('statOrders').textContent = orders.length;
-            document.getElementById('statPending').textContent = pendingCount;
-            document.getElementById('statRevenue').textContent = '₦' + totalRevenue.toLocaleString();
-        }
+        const { data: orders, error } = await supabaseClient
+    .from('orders')
+    .select('status, total_amount')
+    .in('status', ['submitted', 'paid', 'processing', 'shipped', 'delivered']);
+
+if (error) {
+    console.error('Stats error:', error);
+    return;
+}
+
+if (orders) {
+    const pendingCount = orders.filter(o => o.status === 'submitted').length;
+    const totalRevenue = orders
+        .filter(o => o.status === 'paid' || o.status === 'delivered')
+        .reduce((sum, o) => sum + parseFloat(o.total_amount), 0);
+    
+    document.getElementById('statOrders').textContent = orders.length;
+    document.getElementById('statPending').textContent = pendingCount;
+    document.getElementById('statRevenue').textContent = '₦' + totalRevenue.toLocaleString();
+}
         
         document.getElementById('statProducts').textContent = productsCount || 0;
         
-        const pendingPayments = orders?.filter(o => o.status === 'pending' || o.status === 'submitted').length || 0;
+      const pendingPayments = orders?.filter(o => o.status === 'submitted').length || 0
         const badge = document.getElementById('notificationBadge');
         if (badge) {
             badge.textContent = pendingPayments;
