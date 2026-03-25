@@ -8,6 +8,13 @@
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin/>
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet"/>
     <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+    <script>
+        // Get current logged-in user email
+async function getCurrentUserEmail() {
+    const { data: { user } } = await supabaseClient.auth.getUser();
+    return user?.email || null;
+}
+</script>
     <style>
         :root {
             --brand-color: #6F4D38;
@@ -2223,11 +2230,20 @@ async function renderOrders() {
     tbody.innerHTML = '<tr><td colspan="7" class="text-center">Loading orders...</td></tr>';
     
     try {
-       const { data: orders, error } = await supabaseClient
-    .from('orders')
-    .select('*')
-    .in('status', ['submitted', 'paid', 'processing', 'shipped', 'delivered'])
-    .order('created_at', { ascending: false });
+        const userEmail = await getCurrentUserEmail();
+        
+        let query = supabaseClient
+            .from('orders')
+            .select('*')
+            .in('status', ['submitted', 'paid', 'processing', 'shipped', 'delivered'])
+            .order('created_at', { ascending: false });
+        
+        // Filter by user email if logged in
+        if (userEmail) {
+            query = query.eq('customer_email', userEmail);
+        }
+        
+        const { data: orders, error } = await query;
         
         if (error) throw error;
         
@@ -2244,7 +2260,6 @@ async function renderOrders() {
         tbody.innerHTML = '<tr><td colspan="7" class="text-center" style="color: #dc3545;">Failed to load orders</td></tr>';
     }
 }
-
 function displayOrders(orders) {
     const tbody = document.getElementById('ordersTable');
     if (!tbody) return;
@@ -2748,31 +2763,34 @@ async function renderDashboard() {
 
 async function updateStats() {
     try {
-        const { count: productsCount } = await supabaseClient
-            .from('products')
-            .select('*', { count: 'exact', head: true })
-            .eq('is_active', true);
+        const userEmail = await getCurrentUserEmail();
         
-        const { data: orders, error } = await supabaseClient
-    .from('orders')
-    .select('status, total_amount')
-    .in('status', ['submitted', 'paid', 'processing', 'shipped', 'delivered']);
-
-if (error) {
-    console.error('Stats error:', error);
-    return;
-}
-
-if (orders) {
-    const pendingCount = orders.filter(o => o.status === 'submitted').length;
-    const totalRevenue = orders
-        .filter(o => o.status === 'paid' || o.status === 'delivered')
-        .reduce((sum, o) => sum + parseFloat(o.total_amount), 0);
-    
-    document.getElementById('statOrders').textContent = orders.length;
-    document.getElementById('statPending').textContent = pendingCount;
-    document.getElementById('statRevenue').textContent = '₦' + totalRevenue.toLocaleString();
-}
+        let statsQuery = supabaseClient
+            .from('orders')
+            .select('status, total_amount')
+            .in('status', ['submitted', 'paid', 'processing', 'shipped', 'delivered']);
+        
+        if (userEmail) {
+            statsQuery = statsQuery.eq('customer_email', userEmail);
+        }
+        
+        const { data: orders, error } = await statsQuery;
+        
+        if (error) {
+            console.error('Stats error:', error);
+            return;
+        }
+        
+        if (orders) {
+            const pendingCount = orders.filter(o => o.status === 'submitted').length;
+            const totalRevenue = orders
+                .filter(o => o.status === 'paid' || o.status === 'delivered')
+                .reduce((sum, o) => sum + parseFloat(o.total_amount), 0);
+            
+            document.getElementById('statOrders').textContent = orders.length;
+            document.getElementById('statPending').textContent = pendingCount;
+            document.getElementById('statRevenue').textContent = '₦' + totalRevenue.toLocaleString();
+        }
         
         document.getElementById('statProducts').textContent = productsCount || 0;
         
