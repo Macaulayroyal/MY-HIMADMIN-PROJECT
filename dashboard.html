@@ -1638,8 +1638,10 @@ Account Number: 1234567890</textarea>
         </div>
     </div>
 
+// ==================== FULL CORRECTED SCRIPT ====================
+
 <script>
-   // Supabase Configuration
+// Supabase Configuration
 const SUPABASE_URL = 'https://ddrhpjiaotwtblnlqytw.supabase.co';
 const SUPABASE_ANON_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImRkcmhwamlhb3R3dGJsbmxxeXR3Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzI3NTI0MjMsImV4cCI6MjA4ODMyODQyM30.GNb6OTErsgNbb0PlEysXD7BtUhkjk0ldQCPbO_5EsKU';
 
@@ -1647,6 +1649,7 @@ const supabaseClient = supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
 
 // Global State
 let products = [];
+let productsCount = 0;
 let selectedSizes = [];
 let selectedColors = [];
 let selectedImages = [];
@@ -1734,7 +1737,7 @@ function initEventListeners() {
     });
 }
 
-// Realtime subscription for notifications
+// Realtime subscription
 function setupRealtimeSubscription() {
     const ordersChannel = supabaseClient
         .channel('dashboard-orders')
@@ -1744,13 +1747,9 @@ function setupRealtimeSubscription() {
             table: 'orders'
         }, (payload) => {
             console.log('Order updated:', payload);
-            if (currentPage === 'inventory') {
-                renderInventory();
-            }
-            if (currentPage === 'orders') {
-                renderOrders();
-            }
             updateStats();
+            if (currentPage === 'orders') renderOrders();
+            if (currentPage === 'inventory') renderInventory();
         })
         .on('postgres_changes', {
             event: 'INSERT',
@@ -1759,9 +1758,7 @@ function setupRealtimeSubscription() {
         }, (payload) => {
             console.log('New order:', payload);
             updateStats();
-            if (currentPage === 'orders') {
-                renderOrders();
-            }
+            if (currentPage === 'orders') renderOrders();
         })
         .subscribe();
 
@@ -1773,19 +1770,7 @@ function setupRealtimeSubscription() {
             table: 'inventory'
         }, (payload) => {
             console.log('Inventory updated:', payload);
-            if (currentPage === 'inventory') {
-                renderInventory();
-            }
-        })
-        .on('postgres_changes', {
-            event: 'INSERT',
-            schema: 'public',
-            table: 'inventory'
-        }, (payload) => {
-            console.log('New inventory item:', payload);
-            if (currentPage === 'inventory') {
-                renderInventory();
-            }
+            if (currentPage === 'inventory') renderInventory();
         })
         .subscribe();
     
@@ -1813,13 +1798,7 @@ function handleLogout() {
     localStorage.removeItem('adminLoggedIn');
     localStorage.removeItem('adminEmail');
     if (realtimeSubscription) {
-        if (Array.isArray(realtimeSubscription)) {
-            realtimeSubscription.forEach(sub => {
-                supabaseClient.removeChannel(sub);
-            });
-        } else {
-            supabaseClient.removeChannel(realtimeSubscription);
-        }
+        realtimeSubscription.forEach(sub => supabaseClient.removeChannel(sub));
     }
     window.location.href = 'index.html';
 }
@@ -1848,18 +1827,10 @@ function navigateTo(page) {
     document.getElementById('page-' + page)?.classList.add('active');
     
     switch(page) {
-        case 'dashboard': 
-            renderDashboard(); 
-            break;
-        case 'orders': 
-            renderOrders();  
-            break;
-        case 'inventory': 
-            renderInventory(); 
-            break;
-        case 'products': 
-            loadProducts(); 
-            break;
+        case 'dashboard': renderDashboard(); break;
+        case 'orders': renderOrders(); break;
+        case 'inventory': renderInventory(); break;
+        case 'products': loadProducts(); break;
     }
     
     window.scrollTo({ top: 0, behavior: 'smooth' });
@@ -2003,12 +1974,10 @@ async function renderInventory() {
     tbody.innerHTML = '<tr><td colspan="6" class="text-center">Loading inventory...</td></tr>';
     
     try {
+        // RLS automatically filters to user's own inventory
         const { data: inventoryItems, error } = await supabaseClient
             .from('inventory')
-            .select(`
-                *,
-                orders!inner(*)
-            `)
+            .select('*')
             .order('status_updated_at', { ascending: false });
         
         if (error) throw error;
@@ -2040,7 +2009,6 @@ function displayInventory(items) {
     tbody.innerHTML = items.map(item => {
         const statusClass = getInventoryStatusClass(item.current_status);
         const statusText = formatInventoryStatus(item.current_status);
-        
         const lastUpdated = new Date(item.status_updated_at || item.updated_at).toLocaleString('en-NG');
         
         return `
@@ -2114,6 +2082,7 @@ async function updateInventoryStatus(inventoryId, orderId, newStatus) {
     try {
         const now = new Date().toISOString();
         
+        // Update inventory
         const { error: inventoryError } = await supabaseClient
             .from('inventory')
             .update({ 
@@ -2125,6 +2094,7 @@ async function updateInventoryStatus(inventoryId, orderId, newStatus) {
         
         if (inventoryError) throw inventoryError;
         
+        // Update order status
         const { error: orderError } = await supabaseClient
             .from('orders')
             .update({ 
@@ -2137,54 +2107,33 @@ async function updateInventoryStatus(inventoryId, orderId, newStatus) {
         
         if (orderError) throw orderError;
         
-        const { data: order, error: getError } = await supabaseClient
+        // Create notification
+        const { data: order } = await supabaseClient
             .from('orders')
             .select('customer_email, customer_name')
             .eq('id', orderId)
             .single();
         
-        if (getError) {
-            console.error('Could not find order for notification:', getError);
-        } else if (order && order.customer_email) {
+        if (order?.customer_email) {
             const statusMessages = {
-                'packaging': {
-                    title: 'Order Being Packaged',
-                    message: `Dear ${order.customer_name || 'Customer'}, your order ${orderId} is currently being packaged.`
-                },
-                'shipping': {
-                    title: 'Order Shipped',
-                    message: `Dear ${order.customer_name || 'Customer'}, great news! Your order ${orderId} has been shipped.`
-                },
-                'transferring': {
-                    title: 'Order In Transit',
-                    message: `Dear ${order.customer_name || 'Customer'}, your order ${orderId} is being transferred to your local delivery center.`
-                },
-                'delivered': {
-                    title: 'Order Delivered',
-                    message: `Dear ${order.customer_name || 'Customer'}, your order ${orderId} has been delivered! Thank you for shopping with HIM.CLOTHIERS.`
-                }
+                'packaging': { title: 'Order Being Packaged', message: `Dear ${order.customer_name || 'Customer'}, your order ${orderId} is being packaged.` },
+                'shipping': { title: 'Order Shipped', message: `Dear ${order.customer_name || 'Customer'}, your order ${orderId} has been shipped.` },
+                'transferring': { title: 'Order In Transit', message: `Dear ${order.customer_name || 'Customer'}, your order ${orderId} is being transferred.` },
+                'delivered': { title: 'Order Delivered', message: `Dear ${order.customer_name || 'Customer'}, your order ${orderId} has been delivered!` }
             };
             
             const statusInfo = statusMessages[newStatus];
             if (statusInfo) {
-                const { error: notifError } = await supabaseClient
-                    .from('notifications')
-                    .insert({
-                        customer_email: order.customer_email,
-                        type: 'order_status',
-                        title: statusInfo.title,
-                        message: statusInfo.message,
-                        order_id: orderId,
-                        status: newStatus,
-                        is_read: false,
-                        created_at: now
-                    });
-                
-                if (notifError) {
-                    console.error('Error creating notification:', notifError);
-                } else {
-                    console.log('Status notification created for:', order.customer_email);
-                }
+                await supabaseClient.from('notifications').insert({
+                    customer_email: order.customer_email,
+                    type: 'order_status',
+                    title: statusInfo.title,
+                    message: statusInfo.message,
+                    order_id: orderId,
+                    status: newStatus,
+                    is_read: false,
+                    created_at: now
+                });
             }
         }
         
@@ -2203,19 +2152,14 @@ async function createInventoryRecord(orderId, customerEmail, customerName, items
     try {
         const productName = items && items[0] ? items[0].name : 'Unknown Product';
         
-        const { error } = await supabaseClient
-            .from('inventory')
-            .insert({
-                order_id: orderId,
-                customer_email: customerEmail,
-                customer_name: customerName,
-                product_name: productName,
-                current_status: 'packaging',
-                status_updated_at: new Date().toISOString()
-            });
-        
-        if (error) throw error;
-        
+        await supabaseClient.from('inventory').insert({
+            order_id: orderId,
+            customer_email: customerEmail,
+            customer_name: customerName,
+            product_name: productName,
+            current_status: 'packaging',
+            status_updated_at: new Date().toISOString()
+        });
     } catch (error) {
         console.error('Error creating inventory record:', error);
     }
@@ -2230,20 +2174,12 @@ async function renderOrders() {
     tbody.innerHTML = '<tr><td colspan="7" class="text-center">Loading orders...</td></tr>';
     
     try {
-        const userEmail = await getCurrentUserEmail();
-        
-        let query = supabaseClient
+        // RLS automatically filters to user's own orders - NO manual email filter!
+        const { data: orders, error } = await supabaseClient
             .from('orders')
             .select('*')
             .in('status', ['submitted', 'paid', 'processing', 'shipped', 'delivered'])
             .order('created_at', { ascending: false });
-        
-        // Filter by user email if logged in
-        if (userEmail) {
-            query = query.eq('customer_email', userEmail);
-        }
-        
-        const { data: orders, error } = await query;
         
         if (error) throw error;
         
@@ -2260,6 +2196,7 @@ async function renderOrders() {
         tbody.innerHTML = '<tr><td colspan="7" class="text-center" style="color: #dc3545;">Failed to load orders</td></tr>';
     }
 }
+
 function displayOrders(orders) {
     const tbody = document.getElementById('ordersTable');
     if (!tbody) return;
@@ -2276,29 +2213,20 @@ function displayOrders(orders) {
         
         const orderDate = new Date(order.created_at).toLocaleDateString('en-NG');
         const statusClass = getStatusClass(order.status);
-        
         const customerInitials = getInitials(order.customer_name);
         
         let actionButtons = '';
-        if (order.status === 'submitted') {  // ← CHANGED HERE!
+        if (order.status === 'submitted') {
             actionButtons = `
                 <div class="action-btns">
                     <button class="action-btn view" onclick="viewOrderDetails('${order.id}')" title="View Details">
-                        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-                            <path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"></path>
-                            <circle cx="12" cy="12" r="3"></circle>
-                        </svg>
+                        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"></path><circle cx="12" cy="12" r="3"></circle></svg>
                     </button>
                     <button class="action-btn edit" onclick="acceptOrder('${order.id}')" title="Accept Order" style="color: #28a745;">
-                        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-                            <polyline points="20 6 9 17 4 12"></polyline>
-                        </svg>
+                        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="20 6 9 17 4 12"></polyline></svg>
                     </button>
                     <button class="action-btn delete" onclick="rejectOrder('${order.id}')" title="Reject Order">
-                        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-                            <line x1="18" y1="6" x2="6" y2="18"></line>
-                            <line x1="6" y1="6" x2="18" y2="18"></line>
-                        </svg>
+                        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="18" y1="6" x2="6" y2="18"></line><line x1="6" y1="6" x2="18" y2="18"></line></svg>
                     </button>
                 </div>
             `;
@@ -2306,10 +2234,7 @@ function displayOrders(orders) {
             actionButtons = `
                 <div class="action-btns">
                     <button class="action-btn view" onclick="viewOrderDetails('${order.id}')" title="View Details">
-                        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-                            <path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"></path>
-                            <circle cx="12" cy="12" r="3"></circle>
-                        </svg>
+                        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"></path><circle cx="12" cy="12" r="3"></circle></svg>
                     </button>
                 </div>
             `;
@@ -2319,13 +2244,8 @@ function displayOrders(orders) {
             <tr>
                 <td>
                     <div style="display: flex; align-items: center; gap: 12px;">
-                        <img src="${productImage}" 
-                             style="width: 40px; height: 40px; object-fit: cover; border-radius: 6px; border: 1px solid #e0e0e0; flex-shrink: 0;"
-                             onerror="this.style.display='none'">
-                        <div>
-                            <strong>${order.id}</strong><br>
-                            <small style="color: #6c757d;">${orderDate}</small>
-                        </div>
+                        <img src="${productImage}" style="width: 40px; height: 40px; object-fit: cover; border-radius: 6px; border: 1px solid #e0e0e0; flex-shrink: 0;" onerror="this.style.display='none'">
+                        <div><strong>${order.id}</strong><br><small style="color: #6c757d;">${orderDate}</small></div>
                     </div>
                 </td>
                 <td>
@@ -2394,38 +2314,24 @@ async function acceptOrder(orderId) {
         
         if (getError) throw getError;
         
-        console.log('Accepting order:', orderId, 'for email:', order.customer_email);
-        
         const { error } = await supabaseClient
             .from('orders')
-            .update({ 
-                status: 'paid',
-                updated_at: new Date().toISOString()
-            })
+            .update({ status: 'paid', updated_at: new Date().toISOString() })
             .eq('id', orderId);
         
         if (error) throw error;
         
-        // 🔥 ADDED: Create inventory record for tracking
         await createInventoryRecord(orderId, order.customer_email, order.customer_name, order.items);
         
-        const { error: notifError } = await supabaseClient
-            .from('notifications')
-            .insert({
-                customer_email: order.customer_email,
-                type: 'accepted',
-                title: 'Payment Confirmed',
-                message: `Dear ${order.customer_name || 'Customer'}, your payment for order ${orderId} has been verified. Your order is now being packaged.`,
-                order_id: orderId,
-                is_read: false,
-                created_at: new Date().toISOString()
-            });
-        
-        if (notifError) {
-            console.error('Notification error:', notifError);
-        } else {
-            console.log('Notification created for:', order.customer_email);
-        }
+        await supabaseClient.from('notifications').insert({
+            customer_email: order.customer_email,
+            type: 'accepted',
+            title: 'Payment Confirmed',
+            message: `Dear ${order.customer_name || 'Customer'}, your payment for order ${orderId} has been verified.`,
+            order_id: orderId,
+            is_read: false,
+            created_at: new Date().toISOString()
+        });
         
         showNotification('Order Accepted', `Order ${orderId} has been accepted.`, 'success');
         await renderOrders();
@@ -2438,6 +2344,7 @@ async function acceptOrder(orderId) {
         showLoading(false);
     }
 }
+
 async function rejectOrder(orderId) {
     if (!confirm('Are you sure you want to REJECT this order?')) return;
     
@@ -2452,35 +2359,22 @@ async function rejectOrder(orderId) {
         
         if (getError) throw getError;
         
-        console.log('Rejecting order:', orderId, 'for email:', order.customer_email);
-        
         const { error } = await supabaseClient
             .from('orders')
-            .update({ 
-                status: 'rejected',
-                updated_at: new Date().toISOString()
-            })
+            .update({ status: 'rejected', updated_at: new Date().toISOString() })
             .eq('id', orderId);
         
         if (error) throw error;
         
-        const { error: notifError } = await supabaseClient
-            .from('notifications')
-            .insert({
-                customer_email: order.customer_email,
-                type: 'rejected',
-                title: 'Payment Not Received',
-                message: `Dear ${order.customer_name || 'Customer'}, we were unable to verify your payment for order ${orderId}. Please contact support.`,
-                order_id: orderId,
-                is_read: false,
-                created_at: new Date().toISOString()
-            });
-        
-        if (notifError) {
-            console.error('Notification error:', notifError);
-        } else {
-            console.log('Rejection notification created for:', order.customer_email);
-        }
+        await supabaseClient.from('notifications').insert({
+            customer_email: order.customer_email,
+            type: 'rejected',
+            title: 'Payment Not Received',
+            message: `Dear ${order.customer_name || 'Customer'}, we could not verify your payment for order ${orderId}.`,
+            order_id: orderId,
+            is_read: false,
+            created_at: new Date().toISOString()
+        });
         
         showNotification('Order Rejected', `Order ${orderId} has been rejected.`, 'success');
         await renderOrders();
@@ -2505,15 +2399,10 @@ function viewOrderDetails(orderId) {
         
         return `
         <div style="display: flex; gap: 12px; padding: 12px; background: #f8f9fa; border-radius: 8px; margin-bottom: 8px;">
-            <img src="${imageUrl}" 
-                 alt="${item.name}" 
-                 style="width: 60px; height: 60px; object-fit: cover; border-radius: 6px; border: 1px solid #e0e0e0;"
-                 onerror="this.src='data:image/svg+xml,<svg xmlns=%22http://www.w3.org/2000/svg%22 width=%2260%22 height=%2260%22><rect fill=%22%23f9f5f2%22 width=%2260%22 height=%2260%22/><text fill=%22%236F4D38%22 x=%2230%22 y=%2235%22 font-size=%2220%22 text-anchor=%22middle%22>👕</text></svg>'">
+            <img src="${imageUrl}" alt="${item.name}" style="width: 60px; height: 60px; object-fit: cover; border-radius: 6px; border: 1px solid #e0e0e0;" onerror="this.src='data:image/svg+xml,<svg xmlns=%22http://www.w3.org/2000/svg%22 width=%2260%22 height=%2260%22><rect fill=%22%23f9f5f2%22 width=%2260%22 height=%2260%22/><text fill=%22%236F4D38%22 x=%2230%22 y=%2235%22 font-size=%2220%22 text-anchor=%22middle%22>👕</text></svg>'">
             <div style="flex: 1;">
                 <div style="font-weight: 600;">${item.name}</div>
-                <div style="font-size: 13px; color: #6c757d;">
-                    Qty: ${item.quantity}${item.size ? ` | Size: ${item.size}` : ''}${item.color ? ` | Color: ${item.color}` : ''}
-                </div>
+                <div style="font-size: 13px; color: #6c757d;">Qty: ${item.quantity}${item.size ? ` | Size: ${item.size}` : ''}${item.color ? ` | Color: ${item.color}` : ''}</div>
                 <div style="font-weight: 500; color: #6F4D38;">₦${parseFloat(item.price).toLocaleString()} each</div>
             </div>
         </div>
@@ -2525,10 +2414,7 @@ function viewOrderDetails(orderId) {
                 <div class="modal-header">
                     <h3 class="modal-title">Order Details - ${order.id}</h3>
                     <button class="modal-close" onclick="closeOrderDetails()">
-                        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-                            <line x1="18" y1="6" x2="6" y2="18"></line>
-                            <line x1="6" y1="6" x2="18" y2="18"></line>
-                        </svg>
+                        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="18" y1="6" x2="6" y2="18"></line><line x1="6" y1="6" x2="18" y2="18"></line></svg>
                     </button>
                 </div>
                 <div class="modal-body">
@@ -2544,49 +2430,30 @@ function viewOrderDetails(orderId) {
                                 <div style="font-weight: 500;">${new Date(order.created_at).toLocaleDateString('en-NG')}</div>
                             </div>
                         </div>
-                        
                         <div style="font-size: 12px; color: #6c757d; text-transform: uppercase; margin-bottom: 8px;">Status</div>
-                        <span class="status-badge ${getStatusClass(order.status)}" style="margin-bottom: 20px; display: inline-block;">
-                            ${formatStatus(order.status)}
-                        </span>
-                        
+                        <span class="status-badge ${getStatusClass(order.status)}" style="margin-bottom: 20px; display: inline-block;">${formatStatus(order.status)}</span>
                         ${order.inventory_status ? `
                         <div style="margin-top: 12px;">
                             <div style="font-size: 12px; color: #6c757d; text-transform: uppercase; margin-bottom: 8px;">Inventory Status</div>
-                            <span class="status-badge ${getInventoryStatusClass(order.inventory_status)}" style="display: inline-block;">
-                                ${formatInventoryStatus(order.inventory_status)}
-                            </span>
-                            ${order.inventory_updated_at ? `
-                            <div style="font-size: 12px; color: #6c757d; margin-top: 4px;">
-                                Last updated: ${new Date(order.inventory_updated_at).toLocaleString('en-NG')}
-                            </div>
-                            ` : ''}
-                        </div>
-                        ` : ''}
+                            <span class="status-badge ${getInventoryStatusClass(order.inventory_status)}" style="display: inline-block;">${formatInventoryStatus(order.inventory_status)}</span>
+                            ${order.inventory_updated_at ? `<div style="font-size: 12px; color: #6c757d; margin-top: 4px;">Last updated: ${new Date(order.inventory_updated_at).toLocaleString('en-NG')}</div>` : ''}
+                        </div>` : ''}
                     </div>
-                    
                     <div style="margin-bottom: 20px;">
                         <div style="font-size: 12px; color: #6c757d; text-transform: uppercase; margin-bottom: 12px;">Items</div>
                         ${itemsHtml}
                     </div>
-                    
                     <div style="background: #f8f9fa; padding: 16px; border-radius: 8px;">
                         <div style="display: flex; justify-content: space-between; padding-top: 12px; border-top: 1px solid #dee2e6;">
                             <span style="font-weight: 600;">Total</span>
                             <span style="font-weight: 700; color: #6F4D38; font-size: 18px;">₦${parseFloat(order.total_amount).toLocaleString()}</span>
                         </div>
                     </div>
-                    
                     ${order.bank_details ? `
                     <div style="margin-top: 20px; padding: 16px; background: #e8f5e9; border-radius: 8px;">
                         <div style="font-size: 12px; color: #28a745; text-transform: uppercase; margin-bottom: 8px;">Payment Information</div>
-                        <div style="font-size: 14px;">
-                            <div><strong>Bank:</strong> ${order.bank_details.bank}</div>
-                            <div><strong>Account:</strong> ${order.bank_details.account}</div>
-                            <div><strong>Name:</strong> ${order.bank_details.name}</div>
-                        </div>
-                    </div>
-                    ` : ''}
+                        <div style="font-size: 14px;"><div><strong>Bank:</strong> ${order.bank_details.bank}</div><div><strong>Account:</strong> ${order.bank_details.account}</div><div><strong>Name:</strong> ${order.bank_details.name}</div></div>
+                    </div>` : ''}
                 </div>
                 <div class="modal-footer">
                     <button class="btn btn-secondary" onclick="closeOrderDetails()">Close</button>
@@ -2626,7 +2493,7 @@ function filterOrders() {
             (order.customer_name && order.customer_name.toLowerCase().includes(search)) ||
             (order.items && order.items.some(item => item.name.toLowerCase().includes(search)));
         
-        const matchesStatus = !status || ['submitted', 'paid', 'processing', 'shipped', 'delivered'].includes(order.status);
+        const matchesStatus = !status || order.status === status;
         
         return matchesSearch && matchesStatus;
     });
@@ -2648,6 +2515,7 @@ async function loadProducts() {
         if (error) throw error;
         
         products = data || [];
+        productsCount = products.length;
         renderProducts();
     } catch (error) {
         console.error('Error loading products:', error);
@@ -2659,8 +2527,9 @@ async function loadProducts() {
 
 function renderProducts(productsToRender = products.filter(p => p.is_active !== false)) {
     const tbody = document.getElementById('productsTable');
-    
-    if (productsToRender.length === 0) {
+    if (!tbody) return;
+
+    if (!productsToRender || productsToRender.length === 0) {
         tbody.innerHTML = '<tr><td colspan="7" class="text-center">No products found</td></tr>';
         return;
     }
@@ -2684,16 +2553,10 @@ function renderProducts(productsToRender = products.filter(p => p.is_active !== 
                 <td>
                     <div class="action-btns">
                         <button class="action-btn edit" onclick="editProduct(${product.id})">
-                            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-                                <path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"></path>
-                                <path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"></path>
-                            </svg>
+                            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"></path><path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"></path></svg>
                         </button>
                         <button class="action-btn delete" onclick="deleteProduct(${product.id})">
-                            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-                                <polyline points="3 6 5 6 21 6"></polyline>
-                                <path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"></path>
-                            </svg>
+                            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="3 6 5 6 21 6"></polyline><path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"></path></svg>
                         </button>
                     </div>
                 </td>
@@ -2706,6 +2569,7 @@ async function renderDashboard() {
     await updateStats();
     
     try {
+        // RLS automatically filters to user's own orders
         const { data: recentOrders, error } = await supabaseClient
             .from('orders')
             .select('*')
@@ -2727,21 +2591,14 @@ async function renderDashboard() {
             const itemName = firstItem ? firstItem.name : 'N/A';
             const itemCount = order.items ? order.items.length : 0;
             const displayProduct = itemCount > 1 ? `${itemName} (+${itemCount - 1})` : itemName;
-            
             const customerInitials = getInitials(order.customer_name);
             
             return `
                 <tr>
-                    <td>
-                        <div style="display: flex; align-items: center; gap: 8px;">
-                            <span style="font-weight: 600; color: #6F4D38;">${order.id}</span>
-                        </div>
-                    </td>
+                    <td><div style="display: flex; align-items: center; gap: 8px;"><span style="font-weight: 600; color: #6F4D38;">${order.id}</span></div></td>
                     <td>
                         <div style="display: flex; align-items: center; gap: 10px;">
-                            <div class="customer-avatar" style="width: 32px; height: 32px; font-size: 12px; background: linear-gradient(135deg, #6F4D38 0%, #8B6F5C 100%); color: white; border-radius: 50%; display: flex; align-items: center; justify-content: center; font-weight: 600; flex-shrink: 0;">
-                                ${customerInitials}
-                            </div>
+                            <div class="customer-avatar" style="width: 32px; height: 32px; font-size: 12px; background: linear-gradient(135deg, #6F4D38 0%, #8B6F5C 100%); color: white; border-radius: 50%; display: flex; align-items: center; justify-content: center; font-weight: 600; flex-shrink: 0;">${customerInitials}</div>
                             <span>${order.customer_name || 'Guest'}</span>
                         </div>
                     </td>
@@ -2755,26 +2612,18 @@ async function renderDashboard() {
     } catch (error) {
         console.error('Error loading recent orders:', error);
         const tbody = document.getElementById('recentOrdersTable');
-        if (tbody) {
-            tbody.innerHTML = '<tr><td colspan="5" class="text-center">Failed to load orders</td></tr>';
-        }
+        if (tbody) tbody.innerHTML = '<tr><td colspan="5" class="text-center">Failed to load orders</td></tr>';
     }
 }
 
+// CORRECTED: Removed all manual email filtering - RLS handles security
 async function updateStats() {
     try {
-        const userEmail = await getCurrentUserEmail();
-        
-        let statsQuery = supabaseClient
+        // RLS automatically filters to user's own orders
+        const { data: orders, error } = await supabaseClient
             .from('orders')
             .select('status, total_amount')
             .in('status', ['submitted', 'paid', 'processing', 'shipped', 'delivered']);
-        
-        if (userEmail) {
-            statsQuery = statsQuery.eq('customer_email', userEmail);
-        }
-        
-        const { data: orders, error } = await statsQuery;
         
         if (error) {
             console.error('Stats error:', error);
@@ -2794,9 +2643,10 @@ async function updateStats() {
         
         document.getElementById('statProducts').textContent = productsCount || 0;
         
-      const pendingPayments = orders?.filter(o => o.status === 'submitted').length || 0
+        // Notification badge - use pendingCount from orders
         const badge = document.getElementById('notificationBadge');
-        if (badge) {
+        if (badge && orders) {
+            const pendingPayments = orders.filter(o => o.status === 'submitted').length;
             badge.textContent = pendingPayments;
             badge.style.display = pendingPayments > 0 ? 'flex' : 'none';
         }
@@ -2832,10 +2682,7 @@ async function addProduct() {
             const fileName = `${Date.now()}-${file.name.replace(/[^a-zA-Z0-9.]/g, '')}`;
             const { data, error } = await supabaseClient.storage
                 .from('product-images')
-                .upload(fileName, file, {
-                    cacheControl: '3600',
-                    upsert: false
-                });
+                .upload(fileName, file, { cacheControl: '3600', upsert: false });
             
             if (error) throw error;
             
@@ -2849,11 +2696,7 @@ async function addProduct() {
         const { data, error } = await supabaseClient
             .from('products')
             .insert({
-                name,
-                category,
-                price,
-                stock,
-                description,
+                name, category, price, stock, description,
                 sizes: selectedSizes,
                 colors: selectedColors,
                 images: imageUrls,
@@ -2931,10 +2774,7 @@ async function saveProductEdit() {
                 const fileName = `${Date.now()}-${file.name.replace(/[^a-zA-Z0-9.]/g, '')}`;
                 const { data, error } = await supabaseClient.storage
                     .from('product-images')
-                    .upload(fileName, file, {
-                        cacheControl: '3600',
-                        upsert: false
-                    });
+                    .upload(fileName, file, { cacheControl: '3600', upsert: false });
                 
                 if (error) throw error;
                 
@@ -2949,11 +2789,7 @@ async function saveProductEdit() {
         const { error } = await supabaseClient
             .from('products')
             .update({
-                name,
-                category,
-                price,
-                stock,
-                description,
+                name, category, price, stock, description,
                 sizes: editSelectedSizes,
                 colors: editSelectedColors,
                 images: allImages,
@@ -3030,11 +2866,8 @@ function closeModal(modalId) {
 
 function showLoading(show) {
     const overlay = document.getElementById('loadingOverlay');
-    if (show) {
-        overlay.classList.add('active');
-    } else {
-        overlay.classList.remove('active');
-    }
+    if (show) overlay.classList.add('active');
+    else overlay.classList.remove('active');
 }
 
 function showNotification(title, message, type) {
@@ -3053,10 +2886,7 @@ function showNotification(title, message, type) {
             <div class="notification-message">${message}</div>
         </div>
         <button class="notification-close" onclick="this.parentElement.remove()">
-            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-                <line x1="18" y1="6" x2="6" y2="18"></line>
-                <line x1="6" y1="6" x2="18" y2="18"></line>
-            </svg>
+            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="18" y1="6" x2="6" y2="18"></line><line x1="6" y1="6" x2="18" y2="18"></line></svg>
         </button>
     `;
     
@@ -3072,25 +2902,15 @@ function formatAdminName(email) {
         "macaulayroyal": "Macaulay Royal",
         "oleahisah": "Oleah Isah"
     };
-    if (specialCases[namePart]) {
-        return specialCases[namePart];
-    }
+    if (specialCases[namePart]) return specialCases[namePart];
+    
     let cleanName = namePart.replace(/[0-9]/g, '').replace(/[._]/g, ' ').trim();
-    return cleanName
-        .split(/\s+/)
-        .map(word => word.charAt(0).toUpperCase() + word.slice(1))
-        .join(' ');
+    return cleanName.split(/\s+/).map(word => word.charAt(0).toUpperCase() + word.slice(1)).join(' ');
 }
 
 window.addEventListener('beforeunload', () => {
     if (realtimeSubscription) {
-        if (Array.isArray(realtimeSubscription)) {
-            realtimeSubscription.forEach(sub => {
-                supabaseClient.removeChannel(sub);
-            });
-        } else {
-            supabaseClient.removeChannel(realtimeSubscription);
-        }
+        realtimeSubscription.forEach(sub => supabaseClient.removeChannel(sub));
     }
 });
 </script>
