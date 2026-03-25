@@ -2265,7 +2265,7 @@ function displayOrders(orders) {
         const customerInitials = getInitials(order.customer_name);
         
         let actionButtons = '';
-        if (order.status === 'pending' || order.status === 'submitted') {
+        if (order.status === 'submitted') {  // ← CHANGED HERE!
             actionButtons = `
                 <div class="action-btns">
                     <button class="action-btn view" onclick="viewOrderDetails('${order.id}')" title="View Details">
