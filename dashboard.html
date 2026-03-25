@@ -2163,7 +2163,7 @@ async function updateInventoryStatus(inventoryId, orderId, newStatus) {
                 const { error: notifError } = await supabaseClient
                     .from('notifications')
                     .insert({
-                        user_email: order.customer_email,
+                        customer_email: order.customer_email,
                         type: 'order_status',
                         title: statusInfo.title,
                         message: statusInfo.message,
@@ -2390,17 +2390,12 @@ async function acceptOrder(orderId) {
         
         if (error) throw error;
         
-        await createInventoryRecord(
-            orderId, 
-            order.customer_email, 
-            order.customer_name, 
-            order.items
-        );
+      
         
         const { error: notifError } = await supabaseClient
             .from('notifications')
             .insert({
-                user_email: order.customer_email,
+                customer_email: order.customer_email,
                 type: 'accepted',
                 title: 'Payment Confirmed',
                 message: `Dear ${order.customer_name || 'Customer'}, your payment for order ${orderId} has been verified. Your order is now being packaged.`,
@@ -2456,7 +2451,7 @@ async function rejectOrder(orderId) {
         const { error: notifError } = await supabaseClient
             .from('notifications')
             .insert({
-                user_email: order.customer_email,
+                customer_email: order.customer_email,
                 type: 'rejected',
                 title: 'Payment Not Received',
                 message: `Dear ${order.customer_name || 'Customer'}, we were unable to verify your payment for order ${orderId}. Please contact support.`,
