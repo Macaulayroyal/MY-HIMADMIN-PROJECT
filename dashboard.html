@@ -2223,10 +2223,11 @@ async function renderOrders() {
     tbody.innerHTML = '<tr><td colspan="7" class="text-center">Loading orders...</td></tr>';
     
     try {
-        const { data: orders, error } = await supabaseClient
-            .from('orders')
-            .select('*')
-            .order('created_at', { ascending: false });
+       const { data: orders, error } = await supabaseClient
+    .from('orders')
+    .select('*')
+    .in('status', ['submitted', 'paid', 'processing', 'shipped', 'delivered'])
+    .order('created_at', { ascending: false });
         
         if (error) throw error;
         
@@ -2610,7 +2611,7 @@ function filterOrders() {
             (order.customer_name && order.customer_name.toLowerCase().includes(search)) ||
             (order.items && order.items.some(item => item.name.toLowerCase().includes(search)));
         
-        const matchesStatus = !status || order.status === status;
+        const matchesStatus = !status || ['submitted', 'paid', 'processing', 'shipped', 'delivered'].includes(order.status);
         
         return matchesSearch && matchesStatus;
     });
@@ -2757,7 +2758,7 @@ async function updateStats() {
             .select('status, total_amount');
         
         if (orders) {
-            const pendingCount = orders.filter(o => o.status === 'pending' || o.status === 'submitted').length;
+            const pendingCount = orders.filter(o => o.status === 'submitted').length;
             const totalRevenue = orders
                 .filter(o => o.status === 'paid' || o.status === 'delivered')
                 .reduce((sum, o) => sum + parseFloat(o.total_amount), 0);
