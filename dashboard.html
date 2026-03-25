@@ -1638,7 +1638,6 @@ Account Number: 1234567890</textarea>
         </div>
     </div>
 
-// ==================== FULL CORRECTED SCRIPT ====================
 
 <script>
 // Supabase Configuration
@@ -2113,29 +2112,52 @@ async function updateInventoryStatus(inventoryId, orderId, newStatus) {
             .select('customer_email, customer_name')
             .eq('id', orderId)
             .single();
+
+
         
-        if (order?.customer_email) {
-            const statusMessages = {
-                'packaging': { title: 'Order Being Packaged', message: `Dear ${order.customer_name || 'Customer'}, your order ${orderId} is being packaged.` },
-                'shipping': { title: 'Order Shipped', message: `Dear ${order.customer_name || 'Customer'}, your order ${orderId} has been shipped.` },
-                'transferring': { title: 'Order In Transit', message: `Dear ${order.customer_name || 'Customer'}, your order ${orderId} is being transferred.` },
-                'delivered': { title: 'Order Delivered', message: `Dear ${order.customer_name || 'Customer'}, your order ${orderId} has been delivered!` }
-            };
-            
-            const statusInfo = statusMessages[newStatus];
-            if (statusInfo) {
-                await supabaseClient.from('notifications').insert({
-                    customer_email: order.customer_email,
-                    type: 'order_status',
-                    title: statusInfo.title,
-                    message: statusInfo.message,
-                    order_id: orderId,
-                    status: newStatus,
-                    is_read: false,
-                    created_at: now
-                });
-            }
+        // In the admin dashboard, update the updateInventoryStatus function's notification creation:
+
+// Create notification for customer
+// Create notification for customer
+if (order?.customer_email) {
+    const statusMessages = {
+        'packaging': { 
+            title: 'Order Being Packaged 📦', 
+            message: `Dear ${order.customer_name || 'Customer'}, your order #${orderId.slice(-8).toUpperCase()} is being carefully packaged and prepared for shipment.` 
+        },
+        'shipping': { 
+            title: 'Order Shipped 🚚', 
+            message: `Dear ${order.customer_name || 'Customer'}, great news! Your order #${orderId.slice(-8).toUpperCase()} has been shipped and is on its way to you.` 
+        },
+        'transferring': { 
+            title: 'Order In Transit 🔄', 
+            message: `Dear ${order.customer_name || 'Customer'}, your order #${orderId.slice(-8).toUpperCase()} is currently being transferred to your local delivery center.` 
+        },
+        'delivered': { 
+            title: 'Order Delivered ✅', 
+            message: `Dear ${order.customer_name || 'Customer'}, your order #${orderId.slice(-8).toUpperCase()} has been delivered! We hope you love your purchase.` 
         }
+    };
+    
+    const statusInfo = statusMessages[newStatus];
+    if (statusInfo) {
+        const { error: notifError } = await supabaseClient.from('notifications').insert({
+            customer_email: order.customer_email,  // FIXED: Use customer_email
+            user_email: order.customer_email,      // Also set user_email for backward compatibility
+            type: 'order_status',
+            title: statusInfo.title,
+            message: statusInfo.message,
+            order_id: orderId,
+            status: newStatus,
+            is_read: false,
+            created_at: now
+        });
+        
+        if (notifError) {
+            console.error('Status notification error:', notifError);
+        }
+    }
+}
         
         showNotification('Success', `Status updated to ${formatInventoryStatus(newStatus)}`, 'success');
         await renderInventory();
@@ -2300,12 +2322,16 @@ function formatStatus(status) {
     return statusMap[status] || status;
 }
 
+// REPLACE the acceptOrder and rejectOrder functions in admin dashboard:
+
+// ==================== ACCEPT ORDER ====================
 async function acceptOrder(orderId) {
     if (!confirm('Are you sure you want to ACCEPT this order?')) return;
     
     showLoading(true);
     
     try {
+        // Get order details first
         const { data: order, error: getError } = await supabaseClient
             .from('orders')
             .select('*')
@@ -2313,44 +2339,66 @@ async function acceptOrder(orderId) {
             .single();
         
         if (getError) throw getError;
+        if (!order) throw new Error('Order not found');
         
-        const { error } = await supabaseClient
+        const now = new Date().toISOString();
+        
+        // Update order status
+        const { error: updateError } = await supabaseClient
             .from('orders')
-            .update({ status: 'paid', updated_at: new Date().toISOString() })
+            .update({ 
+                status: 'paid',
+                updated_at: now,
+                inventory_status: 'packaging',
+                inventory_updated_at: now
+            })
             .eq('id', orderId);
         
-        if (error) throw error;
+        if (updateError) throw updateError;
         
+        // Create inventory record
         await createInventoryRecord(orderId, order.customer_email, order.customer_name, order.items);
         
-        await supabaseClient.from('notifications').insert({
-            customer_email: order.customer_email,
-            type: 'accepted',
-            title: 'Payment Confirmed',
-            message: `Dear ${order.customer_name || 'Customer'}, your payment for order ${orderId} has been verified.`,
-            order_id: orderId,
-            is_read: false,
-            created_at: new Date().toISOString()
-        });
+        // FIXED: Create notification for customer - set BOTH customer_email AND user_email
+        if (order.customer_email) {
+            const { error: notifError } = await supabaseClient.from('notifications').insert({
+                customer_email: order.customer_email,
+                user_email: order.customer_email,      // ALSO set user_email for compatibility
+                type: 'accepted',
+                title: 'Payment Confirmed ✅',
+                message: `Dear ${order.customer_name || 'Customer'}, your payment of ₦${parseFloat(order.total_amount).toLocaleString()} for order #${orderId.slice(-8).toUpperCase()} has been verified and confirmed. Your order is now being processed.`,
+                order_id: orderId,
+                is_read: false,
+                created_at: now
+            });
+            
+            if (notifError) {
+                console.error('Notification insert error:', notifError);
+            } else {
+                console.log('✅ Notification created for:', order.customer_email);
+            }
+        }
         
-        showNotification('Order Accepted', `Order ${orderId} has been accepted.`, 'success');
+        showNotification('Order Accepted', `Order ${orderId} has been accepted and customer notified.`, 'success');
         await renderOrders();
         await updateStats();
         
     } catch (error) {
         console.error('Error accepting order:', error);
-        showNotification('Error', 'Failed to accept order.', 'error');
+        showNotification('Error', 'Failed to accept order: ' + error.message, 'error');
     } finally {
         showLoading(false);
     }
 }
 
+// ==================== REJECT ORDER ====================
 async function rejectOrder(orderId) {
     if (!confirm('Are you sure you want to REJECT this order?')) return;
     
     showLoading(true);
     
     try {
+        // Get order details first
         const { data: order, error: getError } = await supabaseClient
             .from('orders')
             .select('*')
@@ -2358,31 +2406,141 @@ async function rejectOrder(orderId) {
             .single();
         
         if (getError) throw getError;
+        if (!order) throw new Error('Order not found');
         
-        const { error } = await supabaseClient
+        const now = new Date().toISOString();
+        
+        // Update order status
+        const { error: updateError } = await supabaseClient
             .from('orders')
-            .update({ status: 'rejected', updated_at: new Date().toISOString() })
+            .update({ 
+                status: 'rejected',
+                updated_at: now
+            })
             .eq('id', orderId);
         
-        if (error) throw error;
+        if (updateError) throw updateError;
         
-        await supabaseClient.from('notifications').insert({
-            customer_email: order.customer_email,
-            type: 'rejected',
-            title: 'Payment Not Received',
-            message: `Dear ${order.customer_name || 'Customer'}, we could not verify your payment for order ${orderId}.`,
-            order_id: orderId,
-            is_read: false,
-            created_at: new Date().toISOString()
-        });
+        // FIXED: Create notification for customer - set BOTH customer_email AND user_email
+        if (order.customer_email) {
+            const { error: notifError } = await supabaseClient.from('notifications').insert({
+                customer_email: order.customer_email,
+                user_email: order.customer_email,      // ALSO set user_email for compatibility
+                type: 'rejected',
+                title: 'Payment Not Received ❌',
+                message: `Dear ${order.customer_name || 'Customer'}, we could not verify your payment of ₦${parseFloat(order.total_amount).toLocaleString()} for order #${orderId.slice(-8).toUpperCase()}. Please contact support if you believe this is an error.`,
+                order_id: orderId,
+                is_read: false,
+                created_at: now
+            });
+            
+            if (notifError) {
+                console.error('Notification insert error:', notifError);
+            } else {
+                console.log('✅ Rejection notification created for:', order.customer_email);
+            }
+        }
         
-        showNotification('Order Rejected', `Order ${orderId} has been rejected.`, 'success');
+        showNotification('Order Rejected', `Order ${orderId} has been rejected and customer notified.`, 'success');
         await renderOrders();
         await updateStats();
         
     } catch (error) {
         console.error('Error rejecting order:', error);
-        showNotification('Error', 'Failed to reject order.', 'error');
+        showNotification('Error', 'Failed to reject order: ' + error.message, 'error');
+    } finally {
+        showLoading(false);
+    }
+}
+
+// ==================== UPDATE INVENTORY STATUS ====================
+async function updateInventoryStatus(inventoryId, orderId, newStatus) {
+    showLoading(true);
+    
+    try {
+        const now = new Date().toISOString();
+        
+        // Update inventory
+        const { error: inventoryError } = await supabaseClient
+            .from('inventory')
+            .update({ 
+                current_status: newStatus,
+                status_updated_at: now,
+                updated_at: now
+            })
+            .eq('id', inventoryId);
+        
+        if (inventoryError) throw inventoryError;
+        
+        // Update order status
+        const { error: orderError } = await supabaseClient
+            .from('orders')
+            .update({ 
+                inventory_status: newStatus,
+                inventory_updated_at: now,
+                status: newStatus === 'delivered' ? 'delivered' : 'processing',
+                updated_at: now
+            })
+            .eq('id', orderId);
+        
+        if (orderError) throw orderError;
+        
+        // Get order details for notification
+        const { data: order } = await supabaseClient
+            .from('orders')
+            .select('customer_email, customer_name')
+            .eq('id', orderId)
+            .single();
+        
+        // Create notification for customer
+        if (order?.customer_email) {
+            const statusMessages = {
+                'packaging': { 
+                    title: 'Order Being Packaged 📦', 
+                    message: `Dear ${order.customer_name || 'Customer'}, your order #${orderId.slice(-8).toUpperCase()} is being carefully packaged and prepared for shipment.` 
+                },
+                'shipping': { 
+                    title: 'Order Shipped 🚚', 
+                    message: `Dear ${order.customer_name || 'Customer'}, great news! Your order #${orderId.slice(-8).toUpperCase()} has been shipped and is on its way to you.` 
+                },
+                'transferring': { 
+                    title: 'Order In Transit 🔄', 
+                    message: `Dear ${order.customer_name || 'Customer'}, your order #${orderId.slice(-8).toUpperCase()} is currently being transferred to your local delivery center.` 
+                },
+                'delivered': { 
+                    title: 'Order Delivered ✅', 
+                    message: `Dear ${order.customer_name || 'Customer'}, your order #${orderId.slice(-8).toUpperCase()} has been delivered! We hope you love your purchase.` 
+                }
+            };
+            
+            const statusInfo = statusMessages[newStatus];
+            if (statusInfo) {
+                const { error: notifError } = await supabaseClient.from('notifications').insert({
+                    customer_email: order.customer_email,
+                    user_email: order.customer_email,      // ALSO set user_email for compatibility
+                    type: 'order_status',
+                    title: statusInfo.title,
+                    message: statusInfo.message,
+                    order_id: orderId,
+                    status: newStatus,
+                    is_read: false,
+                    created_at: now
+                });
+                
+                if (notifError) {
+                    console.error('Status notification error:', notifError);
+                } else {
+                    console.log('✅ Status notification created for:', order.customer_email);
+                }
+            }
+        }
+        
+        showNotification('Success', `Status updated to ${formatInventoryStatus(newStatus)}`, 'success');
+        await renderInventory();
+        
+    } catch (error) {
+        console.error('Error updating status:', error);
+        showNotification('Error', 'Failed to update status: ' + error.message, 'error');
     } finally {
         showLoading(false);
     }
