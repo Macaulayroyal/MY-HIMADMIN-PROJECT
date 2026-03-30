@@ -1973,7 +1973,6 @@ async function renderInventory() {
     tbody.innerHTML = '<tr><td colspan="6" class="text-center">Loading inventory...</td></tr>';
     
     try {
-        // RLS automatically filters to user's own inventory
         const { data: inventoryItems, error } = await supabaseClient
             .from('inventory')
             .select('*')
@@ -2075,14 +2074,34 @@ function formatInventoryStatus(status) {
     return statusMap[status] || status;
 }
 
-// ==================== UPDATE INVENTORY STATUS ====================
+// ==================== UPDATE INVENTORY STATUS (FULLY FIXED) ====================
 async function updateInventoryStatus(inventoryId, orderId, newStatus) {
     showLoading(true);
     
     try {
         const now = new Date().toISOString();
         
-        // Update inventory table
+        // FIXED: Get the inventory record first to ensure we have the right ID
+        const { data: inventoryRecord, error: getInvError } = await supabaseClient
+            .from('inventory')
+            .select('id, order_id')
+            .eq('id', inventoryId)
+            .single();
+            
+        if (getInvError) {
+            console.error('Error finding inventory record:', getInvError);
+            // Try to find by order_id if id fails
+            const { data: invByOrder, error: orderInvError } = await supabaseClient
+                .from('inventory')
+                .select('id')
+                .eq('order_id', orderId)
+                .single();
+                
+            if (orderInvError) throw new Error('Inventory record not found');
+            inventoryId = invByOrder.id;
+        }
+        
+        // Update inventory table using the correct ID
         const { error: inventoryError } = await supabaseClient
             .from('inventory')
             .update({ 
@@ -2110,7 +2129,7 @@ async function updateInventoryStatus(inventoryId, orderId, newStatus) {
         // Get order details for notification
         const { data: order, error: getError } = await supabaseClient
             .from('orders')
-            .select('customer_email, customer_name')
+            .select('customer_email, customer_name, user_id, guest_session_id')
             .eq('id', orderId)
             .single();
         
@@ -2118,8 +2137,8 @@ async function updateInventoryStatus(inventoryId, orderId, newStatus) {
             console.error('Failed to fetch order for notification:', getError);
         }
         
-        // Create notification for customer
-        if (order?.customer_email) {
+        // Create notification for customer (FIXED - supports both guest and signed-in)
+        if (order) {
             const statusMessages = {
                 'packaging': { 
                     title: 'Order Being Packaged 📦', 
@@ -2141,22 +2160,35 @@ async function updateInventoryStatus(inventoryId, orderId, newStatus) {
             
             const statusInfo = statusMessages[newStatus];
             if (statusInfo) {
-                const { error: notifError } = await supabaseClient.from('notifications').insert({
-                    customer_email: order.customer_email,
-                    user_email: order.customer_email,      // for compatibility with notifications.html
+                const notificationData = {
                     type: 'order_status',
                     title: statusInfo.title,
                     message: statusInfo.message,
                     order_id: orderId,
-                    status: newStatus,
                     is_read: false,
                     created_at: now
-                });
+                };
+
+                // Add identification fields for both guest and signed-in users
+                if (order.customer_email) {
+                    notificationData.customer_email = order.customer_email;
+                    notificationData.user_email = order.customer_email;
+                }
+                
+                if (order.user_id) {
+                    notificationData.user_id = order.user_id;
+                }
+                
+                if (order.guest_session_id) {
+                    notificationData.guest_session_id = order.guest_session_id;
+                }
+
+                const { error: notifError } = await supabaseClient.from('notifications').insert(notificationData);
                 
                 if (notifError) {
                     console.error('Status notification error:', notifError);
                 } else {
-                    console.log('✅ Status notification sent to:', order.customer_email);
+                    console.log('✅ Status notification sent to:', order.customer_email || order.user_id || 'guest');
                 }
             }
         }
@@ -2176,14 +2208,38 @@ async function createInventoryRecord(orderId, customerEmail, customerName, items
     try {
         const productName = items && items[0] ? items[0].name : 'Unknown Product';
         
-        await supabaseClient.from('inventory').insert({
+        // Get order details to ensure we have guest_session_id if available
+        const { data: order } = await supabaseClient
+            .from('orders')
+            .select('guest_session_id, user_id')
+            .eq('id', orderId)
+            .single();
+        
+        const insertData = {
             order_id: orderId,
             customer_email: customerEmail,
             customer_name: customerName,
             product_name: productName,
             current_status: 'packaging',
-            status_updated_at: new Date().toISOString()
-        });
+            status_updated_at: new Date().toISOString(),
+            created_at: new Date().toISOString(),
+            updated_at: new Date().toISOString()
+        };
+        
+        // Add optional fields if they exist
+        if (order) {
+            if (order.guest_session_id) insertData.guest_session_id = order.guest_session_id;
+            if (order.user_id) insertData.user_id = order.user_id;
+        }
+        
+        const { error } = await supabaseClient.from('inventory').insert(insertData);
+        
+        if (error) {
+            console.error('Error creating inventory record:', error);
+            throw error;
+        }
+        
+        console.log('✅ Inventory record created for order:', orderId);
     } catch (error) {
         console.error('Error creating inventory record:', error);
     }
@@ -2198,7 +2254,6 @@ async function renderOrders() {
     tbody.innerHTML = '<tr><td colspan="7" class="text-center">Loading orders...</td></tr>';
     
     try {
-        // RLS automatically filters to user's own orders - NO manual email filter!
         const { data: orders, error } = await supabaseClient
             .from('orders')
             .select('*')
@@ -2324,9 +2379,7 @@ function formatStatus(status) {
     return statusMap[status] || status;
 }
 
-// REPLACE the acceptOrder and rejectOrder functions in admin dashboard:
-
-// ==================== ACCEPT ORDER ====================
+// ==================== ACCEPT ORDER (FIXED) ====================
 async function acceptOrder(orderId) {
     if (!confirm('Are you sure you want to ACCEPT this order?')) return;
     
@@ -2344,10 +2397,11 @@ async function acceptOrder(orderId) {
 
         const now = new Date().toISOString();
 
+        // FIXED: Properly update status to 'paid'
         const { error: updateError } = await supabaseClient
             .from('orders')
             .update({ 
-                status: 'paid',
+                status: 'paid',  // This changes from 'submitted' to 'paid'
                 inventory_status: 'packaging',
                 inventory_updated_at: now,
                 updated_at: now
@@ -2356,22 +2410,41 @@ async function acceptOrder(orderId) {
 
         if (updateError) throw updateError;
 
-        // Create inventory record if needed
+        // Create inventory record
         await createInventoryRecord(orderId, order.customer_email, order.customer_name, order.items);
 
-        // Send notification
+        // FIXED: Send notification to both guest and signed-in users
+        const notificationData = {
+            type: 'accepted',
+            title: 'Payment Confirmed ✅',
+            message: `Dear ${order.customer_name || 'Customer'}, your payment for order #${orderId.slice(-8).toUpperCase()} has been verified. Your order is now being processed.`,
+            order_id: orderId,
+            is_read: false,
+            created_at: now
+        };
+
+        // Add identification for guest or signed-in user
         if (order.customer_email) {
-            const { error: notifError } = await supabaseClient.from('notifications').insert({
-                customer_email: order.customer_email,
-                user_email: order.customer_email,
-                type: 'accepted',
-                title: 'Payment Confirmed ✅',
-                message: `Dear ${order.customer_name || 'Customer'}, your payment for order #${orderId.slice(-8).toUpperCase()} has been verified. Your order is now being processed.`,
-                order_id: orderId,
-                is_read: false,
-                created_at: now
-            });
-            if (notifError) console.error(notifError);
+            notificationData.customer_email = order.customer_email;
+            notificationData.user_email = order.customer_email;
+        }
+        
+        // Add user_id if available (for signed-in users)
+        if (order.user_id) {
+            notificationData.user_id = order.user_id;
+        }
+        
+        // Add guest_session_id if available (for guest users)
+        if (order.guest_session_id) {
+            notificationData.guest_session_id = order.guest_session_id;
+        }
+
+        const { error: notifError } = await supabaseClient.from('notifications').insert(notificationData);
+        
+        if (notifError) {
+            console.error('Notification error:', notifError);
+        } else {
+            console.log('✅ Acceptance notification sent');
         }
 
         showNotification('Success', `Order ${orderId} accepted and customer notified`, 'success');
@@ -2379,21 +2452,20 @@ async function acceptOrder(orderId) {
         await updateStats();
 
     } catch (error) {
-        console.error(error);
-        showNotification('Error', 'Failed to accept order', 'error');
+        console.error('Error accepting order:', error);
+        showNotification('Error', 'Failed to accept order: ' + error.message, 'error');
     } finally {
         showLoading(false);
     }
 }
 
-// ==================== REJECT ORDER ====================
+// ==================== REJECT ORDER (FIXED) ====================
 async function rejectOrder(orderId) {
     if (!confirm('Are you sure you want to REJECT this order?')) return;
     
     showLoading(true);
     
     try {
-        // Get full order details first
         const { data: order, error: getError } = await supabaseClient
             .from('orders')
             .select('*')
@@ -2405,11 +2477,11 @@ async function rejectOrder(orderId) {
         
         const now = new Date().toISOString();
         
-        // Update order status to rejected
+        // FIXED: Update status to 'rejected'
         const { error: updateError } = await supabaseClient
             .from('orders')
             .update({ 
-                status: 'rejected',
+                status: 'rejected',  // This changes from 'submitted' to 'rejected'
                 inventory_status: 'rejected',
                 inventory_updated_at: now,
                 updated_at: now
@@ -2418,29 +2490,38 @@ async function rejectOrder(orderId) {
         
         if (updateError) throw updateError;
         
-        // Create notification for the customer
+        // FIXED: Send notification with proper identification
+        const notificationData = {
+            type: 'rejected',
+            title: 'Order Rejected ❌',
+            message: `Dear ${order.customer_name || 'Customer'}, we could not verify your payment for order #${orderId.slice(-8).toUpperCase()}. Please contact support if you believe this is an error.`,
+            order_id: orderId,
+            is_read: false,
+            created_at: now
+        };
+
         if (order.customer_email) {
-            const { error: notifError } = await supabaseClient.from('notifications').insert({
-                customer_email: order.customer_email,
-                user_email: order.customer_email,           // for compatibility with notifications.html
-                type: 'rejected',
-                title: 'Order Rejected ❌',
-                message: `Dear ${order.customer_name || 'Customer'}, we could not verify your payment for order #${orderId.slice(-8).toUpperCase()}. Please contact support if you believe this is an error.`,
-                order_id: orderId,
-                is_read: false,
-                created_at: now
-            });
-            
-            if (notifError) {
-                console.error('Notification insert error:', notifError);
-            } else {
-                console.log('✅ Rejection notification sent to:', order.customer_email);
-            }
+            notificationData.customer_email = order.customer_email;
+            notificationData.user_email = order.customer_email;
+        }
+        
+        if (order.user_id) {
+            notificationData.user_id = order.user_id;
+        }
+        
+        if (order.guest_session_id) {
+            notificationData.guest_session_id = order.guest_session_id;
+        }
+
+        const { error: notifError } = await supabaseClient.from('notifications').insert(notificationData);
+        
+        if (notifError) {
+            console.error('Notification insert error:', notifError);
+        } else {
+            console.log('✅ Rejection notification sent to:', order.customer_email || 'guest user');
         }
         
         showNotification('Success', `Order ${orderId} has been rejected and customer notified`, 'success');
-        
-        // Refresh the orders list and stats
         await renderOrders();
         await updateStats();
         
@@ -2451,105 +2532,6 @@ async function rejectOrder(orderId) {
         showLoading(false);
     }
 }
-
-
-// ==================== UPDATE INVENTORY STATUS ====================
-async function updateInventoryStatus(inventoryId, orderId, newStatus) {
-    showLoading(true);
-    
-    try {
-        const now = new Date().toISOString();
-        
-        // 1. Update inventory table
-        const { error: inventoryError } = await supabaseClient
-            .from('inventory')
-            .update({ 
-                current_status: newStatus,
-                status_updated_at: now,
-                updated_at: now
-            })
-            .eq('id', inventoryId);
-        
-        if (inventoryError) throw inventoryError;
-        
-        // 2. Update orders table
-        const { error: orderError } = await supabaseClient
-            .from('orders')
-            .update({ 
-                inventory_status: newStatus,
-                inventory_updated_at: now,
-                status: newStatus === 'delivered' ? 'delivered' : 'processing',
-                updated_at: now
-            })
-            .eq('id', orderId);
-        
-        if (orderError) throw orderError;
-        
-        // 3. Get order details for notification
-        const { data: order, error: getError } = await supabaseClient
-            .from('orders')
-            .select('customer_email, customer_name')
-            .eq('id', orderId)
-            .single();
-        
-        if (getError) console.error('Failed to fetch order for notification:', getError);
-        
-        // Create notification for customer
-        if (order?.customer_email) {
-            const statusMessages = {
-                'packaging': { 
-                    title: 'Order Being Packaged 📦', 
-                    message: `Dear ${order.customer_name || 'Customer'}, your order #${orderId.slice(-8).toUpperCase()} is being carefully packaged and prepared for shipment.` 
-                },
-                'shipping': { 
-                    title: 'Order Shipped 🚚', 
-                    message: `Dear ${order.customer_name || 'Customer'}, great news! Your order #${orderId.slice(-8).toUpperCase()} has been shipped and is on its way to you.` 
-                },
-                'transferring': { 
-                    title: 'Order In Transit 🔄', 
-                    message: `Dear ${order.customer_name || 'Customer'}, your order #${orderId.slice(-8).toUpperCase()} is currently being transferred to your local delivery center.` 
-                },
-                'delivered': { 
-                    title: 'Order Delivered ✅', 
-                    message: `Dear ${order.customer_name || 'Customer'}, your order #${orderId.slice(-8).toUpperCase()} has been delivered! We hope you love your purchase.` 
-                }
-            };
-            
-            const statusInfo = statusMessages[newStatus];
-            if (statusInfo) {
-                const { error: notifError } = await supabaseClient.from('notifications').insert({
-                    customer_email: order.customer_email,
-                    user_email: order.customer_email,        // for compatibility with notifications.html
-                    type: 'order_status',
-                    title: statusInfo.title,
-                    message: statusInfo.message,
-                    order_id: orderId,
-                    status: newStatus,
-                    is_read: false,
-                    created_at: now
-                });
-                
-                if (notifError) {
-                    console.error('Notification insert error:', notifError);
-                } else {
-                    console.log('✅ Status notification sent to:', order.customer_email);
-                }
-            }
-        }
-        
-        showNotification('Success', `Status updated to ${formatInventoryStatus(newStatus)}`, 'success');
-        
-        // Refresh the inventory view
-        await renderInventory();
-        
-    } catch (error) {
-        console.error('Error updating inventory status:', error);
-        showNotification('Error', 'Failed to update status: ' + error.message, 'error');
-    } finally {
-        showLoading(false);
-    }
-}
-
 
 function viewOrderDetails(orderId) {
     const order = allOrders?.find(o => o.id === orderId);
@@ -2732,7 +2714,6 @@ async function renderDashboard() {
     await updateStats();
     
     try {
-        // RLS automatically filters to user's own orders
         const { data: recentOrders, error } = await supabaseClient
             .from('orders')
             .select('*')
@@ -2779,10 +2760,8 @@ async function renderDashboard() {
     }
 }
 
-// CORRECTED: Removed all manual email filtering - RLS handles security
 async function updateStats() {
     try {
-        // RLS automatically filters to user's own orders
         const { data: orders, error } = await supabaseClient
             .from('orders')
             .select('status, total_amount')
@@ -2806,7 +2785,6 @@ async function updateStats() {
         
         document.getElementById('statProducts').textContent = productsCount || 0;
         
-        // Notification badge - use pendingCount from orders
         const badge = document.getElementById('notificationBadge');
         if (badge && orders) {
             const pendingPayments = orders.filter(o => o.status === 'submitted').length;
