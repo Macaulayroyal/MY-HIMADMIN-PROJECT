@@ -2254,10 +2254,10 @@ async function renderOrders() {
     tbody.innerHTML = '<tr><td colspan="7" class="text-center">Loading orders...</td></tr>';
     
     try {
+        // FIXED: Removed .in() filter to show ALL orders including 'rejected' and 'cancelled'
         const { data: orders, error } = await supabaseClient
             .from('orders')
             .select('*')
-            .in('status', ['submitted', 'paid', 'processing', 'shipped', 'delivered'])
             .order('created_at', { ascending: false });
         
         if (error) throw error;
@@ -2356,7 +2356,8 @@ function getStatusClass(status) {
         'processing': 'status-processing',
         'shipped': 'status-shipped',
         'delivered': 'status-delivered',
-        'rejected': 'status-rejected'
+        'rejected': 'status-rejected',
+        'cancelled': 'status-rejected'  // Use rejected styling for cancelled too
     };
     return statusMap[status] || 'status-pending';
 }
@@ -2374,7 +2375,8 @@ function formatStatus(status) {
         'processing': 'Processing',
         'shipped': 'Shipped',
         'delivered': 'Delivered',
-        'rejected': 'Rejected'
+        'rejected': 'Rejected',
+        'cancelled': 'Cancelled'
     };
     return statusMap[status] || status;
 }
@@ -2397,23 +2399,27 @@ async function acceptOrder(orderId) {
 
         const now = new Date().toISOString();
 
-        // FIXED: Properly update status to 'paid'
-        const { error: updateError } = await supabaseClient
+        // FIXED: Properly update status to 'paid' and return the updated data
+        const { data: updatedOrder, error: updateError } = await supabaseClient
             .from('orders')
             .update({ 
-                status: 'paid',  // This changes from 'submitted' to 'paid'
+                status: 'paid',
                 inventory_status: 'packaging',
                 inventory_updated_at: now,
                 updated_at: now
             })
-            .eq('id', orderId);
+            .eq('id', orderId)
+            .select()
+            .single();
 
         if (updateError) throw updateError;
+        
+        console.log('Order accepted, new status:', updatedOrder.status);
 
         // Create inventory record
         await createInventoryRecord(orderId, order.customer_email, order.customer_name, order.items);
 
-        // FIXED: Send notification to both guest and signed-in users
+        // Send notification to customer
         const notificationData = {
             type: 'accepted',
             title: 'Payment Confirmed ✅',
@@ -2423,18 +2429,15 @@ async function acceptOrder(orderId) {
             created_at: now
         };
 
-        // Add identification for guest or signed-in user
         if (order.customer_email) {
             notificationData.customer_email = order.customer_email;
             notificationData.user_email = order.customer_email;
         }
         
-        // Add user_id if available (for signed-in users)
         if (order.user_id) {
             notificationData.user_id = order.user_id;
         }
         
-        // Add guest_session_id if available (for guest users)
         if (order.guest_session_id) {
             notificationData.guest_session_id = order.guest_session_id;
         }
@@ -2443,11 +2446,11 @@ async function acceptOrder(orderId) {
         
         if (notifError) {
             console.error('Notification error:', notifError);
-        } else {
-            console.log('✅ Acceptance notification sent');
         }
 
-        showNotification('Success', `Order ${orderId} accepted and customer notified`, 'success');
+        showNotification('Success', `Order ${orderId} accepted and marked as PAID`, 'success');
+        
+        // FIXED: Force refresh the orders list
         await renderOrders();
         await updateStats();
 
@@ -2477,20 +2480,24 @@ async function rejectOrder(orderId) {
         
         const now = new Date().toISOString();
         
-        // FIXED: Update status to 'rejected'
-        const { error: updateError } = await supabaseClient
+        // FIXED: Update status to 'rejected' and return updated data
+        const { data: updatedOrder, error: updateError } = await supabaseClient
             .from('orders')
             .update({ 
-                status: 'rejected',  // This changes from 'submitted' to 'rejected'
+                status: 'rejected',
                 inventory_status: 'rejected',
                 inventory_updated_at: now,
                 updated_at: now
             })
-            .eq('id', orderId);
+            .eq('id', orderId)
+            .select()
+            .single();
         
         if (updateError) throw updateError;
         
-        // FIXED: Send notification with proper identification
+        console.log('Order rejected, new status:', updatedOrder.status);
+        
+        // Send notification
         const notificationData = {
             type: 'rejected',
             title: 'Order Rejected ❌',
@@ -2517,11 +2524,11 @@ async function rejectOrder(orderId) {
         
         if (notifError) {
             console.error('Notification insert error:', notifError);
-        } else {
-            console.log('✅ Rejection notification sent to:', order.customer_email || 'guest user');
         }
         
-        showNotification('Success', `Order ${orderId} has been rejected and customer notified`, 'success');
+        showNotification('Success', `Order ${orderId} has been REJECTED`, 'success');
+        
+        // FIXED: Force refresh the orders list
         await renderOrders();
         await updateStats();
         
