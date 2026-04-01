@@ -739,6 +739,73 @@ async function getCurrentUserEmail() {
             .form-row { grid-template-columns: 1fr; }
             .modal { max-height: 95vh; }
         }
+
+        .chart-container {
+    height: 250px;
+    position: relative;
+    padding: 20px 0 40px 0;
+}
+
+.chart-bar {
+    display: flex;
+    align-items: flex-end;
+    justify-content: space-around;
+    height: 100%;
+    gap: 8px;
+    padding: 0 10px;
+}
+
+.chart-item {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 4px;
+    flex: 1;
+    max-width: 60px;
+    transition: transform 0.2s;
+    cursor: pointer;
+}
+
+.chart-item:hover {
+    transform: translateY(-4px);
+}
+
+.chart-bar-fill {
+    width: 100%;
+    min-height: 4px;
+    border-radius: 4px 4px 0 0;
+    transition: height 0.5s ease;
+    position: relative;
+}
+
+.chart-bar-fill::after {
+    content: attr(data-value);
+    position: absolute;
+    top: -20px;
+    left: 50%;
+    transform: translateX(-50%);
+    font-size: 10px;
+    color: var(--brand-color);
+    font-weight: 600;
+    opacity: 0;
+    transition: opacity 0.2s;
+}
+
+.chart-item:hover .chart-bar-fill::after {
+    opacity: 1;
+}
+
+.chart-label {
+    font-size: 11px;
+    color: var(--text-secondary);
+    font-weight: 500;
+}
+
+.chart-value {
+    font-size: 10px;
+    color: var(--text-muted);
+}
+
     </style>
 </head>
 <body>
@@ -986,47 +1053,60 @@ async function getCurrentUserEmail() {
                         </div>
                     </div>
 
-                    <div class="card">
-                        <div class="card-header">
-                            <h3 class="card-title">Sales Overview</h3>
-                            <select class="form-select" style="width: auto;">
-                                <option>Last 7 Days</option>
-                                <option>Last 30 Days</option>
-                                <option>Last 3 Months</option>
-                            </select>
-                        </div>
-                        <div class="card-body">
-                            <div class="chart-container">
-                                <div class="chart-bar" id="salesChart"></div>
-                            </div>
-                        </div>
-                    </div>
+                 <div class="card">
+    <div class="card-header">
+        <h3 class="card-title">Sales Overview</h3>
+        <select class="form-select" id="chartPeriod" onchange="changeChartPeriod(this.value)" style="width: auto;">
+            <option value="7days">Last 7 Days</option>
+            <option value="30days">Last 30 Days</option>
+            <option value="90days">Last 3 Months</option>
+        </select>
+    </div>
+    <div class="card-body">
+        <div class="chart-container">
+            <div class="chart-bar" id="salesChart"></div>
+        </div>
+        <div id="chartSummary" style="display: flex; justify-content: space-around; margin-top: 16px; padding-top: 16px; border-top: 1px solid var(--border-color);">
+            <div style="text-align: center;">
+                <div style="font-size: 12px; color: var(--text-secondary); text-transform: uppercase;">Total Sales</div>
+                <div style="font-size: 18px; font-weight: 700; color: var(--brand-color);" id="chartTotalSales">₦0</div>
+            </div>
+            <div style="text-align: center;">
+                <div style="font-size: 12px; color: var(--text-secondary); text-transform: uppercase;">Average/Day</div>
+                <div style="font-size: 18px; font-weight: 700; color: var(--text-primary);" id="chartAvgSales">₦0</div>
+            </div>
+            <div style="text-align: center;">
+                <div style="font-size: 12px; color: var(--text-secondary); text-transform: uppercase;">Best Day</div>
+                <div style="font-size: 18px; font-weight: 700; color: var(--success);" id="chartBestDay">₦0</div>
+            </div>
+        </div>
+    </div>
+</div>
 
-                    <div class="card">
-                        <div class="card-header">
-                            <h3 class="card-title">Recent Orders</h3>
-                            <button class="btn btn-secondary btn-sm" onclick="navigateTo('orders')">View All</button>
-                        </div>
-                        <div class="card-body">
-                            <div class="table-container">
-                                <table class="data-table">
-                                    <thead>
-                                        <tr>
-                                            <th>Order ID</th>
-                                            <th>Customer</th>
-                                            <th>Product</th>
-                                            <th>Amount</th>
-                                            <th>Status</th>
-                                        </tr>
-                                    </thead>
-                                    <tbody id="recentOrdersTable">
-                                        <tr><td colspan="5" class="text-center">Loading...</td></tr>
-                                    </tbody>
-                                </table>
-                            </div>
-                        </div>
-                    </div>
-                </div>
+<div class="card">
+    <div class="card-header">
+        <h3 class="card-title">Recent Orders</h3>
+        <button class="btn btn-secondary btn-sm" onclick="navigateTo('orders')">View All</button>
+    </div>
+    <div class="card-body">
+        <div class="table-container">
+            <table class="data-table">
+                <thead>
+                    <tr>
+                        <th>Order ID</th>
+                        <th>Customer</th>
+                        <th>Product</th>
+                        <th>Amount</th>
+                        <th>Status</th>
+                    </tr>
+                </thead>
+                <tbody id="recentOrdersTable">
+                    <tr><td colspan="5" class="text-center">Loading...</td></tr>
+                </tbody>
+            </table>
+        </div>
+    </div>
+</div>
 
                 <!-- Orders Page -->
                 <div class="page" id="page-orders">
@@ -1661,13 +1741,14 @@ let currentPage = 'dashboard';
 let allOrders = [];
 let inventoryOrders = [];
 let realtimeSubscription = null;
+let refreshTimeout = null;
 
 // Initialize
 document.addEventListener('DOMContentLoaded', async () => {
     initEventListeners();
     await loadProducts();
     await updateStats();
-    renderSalesChart();
+    await renderSalesChart('7days');
     setupRealtimeSubscription();
     
     const savedImage = localStorage.getItem('adminProfileImage');
@@ -1736,44 +1817,47 @@ function initEventListeners() {
     });
 }
 
-// Realtime subscription
+// Debounced refresh utility to prevent concurrent reloads
+function debouncedRefresh() {
+    if (refreshTimeout) clearTimeout(refreshTimeout);
+    refreshTimeout = setTimeout(() => {
+        renderOrders();
+        updateStats();
+        if (currentPage === 'inventory') renderInventory();
+    }, 500);
+}
+
+// Realtime subscription with proper cleanup and debouncing
 function setupRealtimeSubscription() {
+    if (realtimeSubscription) {
+        realtimeSubscription.forEach(sub => supabaseClient.removeChannel(sub));
+    }
+
     const ordersChannel = supabaseClient
-        .channel('dashboard-orders')
+        .channel('dashboard-orders-' + Date.now())
         .on('postgres_changes', {
             event: 'UPDATE',
             schema: 'public',
             table: 'orders'
         }, (payload) => {
-            console.log('Order updated:', payload);
-            updateStats();
-            if (currentPage === 'orders') renderOrders();
-            if (currentPage === 'inventory') renderInventory();
+            console.log('Order updated via realtime:', payload);
+            if (!document.getElementById('loadingOverlay').classList.contains('active')) {
+                debouncedRefresh();
+            }
         })
         .on('postgres_changes', {
             event: 'INSERT',
             schema: 'public',
             table: 'orders'
         }, (payload) => {
-            console.log('New order:', payload);
-            updateStats();
-            if (currentPage === 'orders') renderOrders();
-        })
-        .subscribe();
-
-    const inventoryChannel = supabaseClient
-        .channel('dashboard-inventory')
-        .on('postgres_changes', {
-            event: 'UPDATE',
-            schema: 'public',
-            table: 'inventory'
-        }, (payload) => {
-            console.log('Inventory updated:', payload);
-            if (currentPage === 'inventory') renderInventory();
+            console.log('New order via realtime:', payload);
+            if (!document.getElementById('loadingOverlay').classList.contains('active')) {
+                debouncedRefresh();
+            }
         })
         .subscribe();
     
-    realtimeSubscription = [ordersChannel, inventoryChannel];
+    realtimeSubscription = [ordersChannel];
 }
 
 // Sidebar Functions
@@ -1836,13 +1920,114 @@ function navigateTo(page) {
 }
 
 // Chart
-function renderSalesChart() {
-    const data = [45, 62, 38, 75, 55, 88, 72];
-    const labels = ['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun'];
-    const max = Math.max(...data);
-    document.getElementById('salesChart').innerHTML = data.map((value, i) => 
-        `<div class="chart-item"><div class="chart-bar-fill" style="height: ${(value / max * 200)}px;"></div><span class="chart-label">${labels[i]}</span></div>`
-    ).join('');
+// ==================== DYNAMIC SALES CHART ====================
+
+async function renderSalesChart(period = '7days') {
+    const chartContainer = document.getElementById('salesChart');
+    if (!chartContainer) return;
+    
+    // Show loading state
+    chartContainer.innerHTML = '<div style="display:flex;align-items:center;justify-content:center;height:100%;color:#6c757d;">Loading chart...</div>';
+    
+    try {
+        // Calculate date range based on period
+        const now = new Date();
+        const daysMap = { '7days': 7, '30days': 30, '90days': 90 };
+        const days = daysMap[period] || 7;
+        const startDate = new Date(now);
+        startDate.setDate(startDate.getDate() - days);
+        
+        // Fetch orders within date range
+        const { data: orders, error } = await supabaseClient
+            .from('orders')
+            .select('total_amount, created_at, status')
+            .gte('created_at', startDate.toISOString())
+            .lte('created_at', now.toISOString())
+            .in('status', ['paid', 'delivered', 'processing']); // Only count completed/processing orders
+        
+        if (error) throw error;
+        
+        // Group sales by day
+        const salesData = groupSalesByDay(orders || [], days);
+        
+        // Generate labels and values
+        const labels = salesData.map(d => d.label);
+        const values = salesData.map(d => d.total);
+        const max = Math.max(...values, 1); // Prevent division by zero
+        
+        // Build chart HTML
+        chartContainer.innerHTML = values.map((value, i) => {
+            const height = (value / max * 200); // Max height 200px
+            const isToday = i === values.length - 1;
+            const barColor = isToday ? 'var(--brand-color)' : 'rgba(111, 77, 56, 0.6)';
+            
+            return `
+                <div class="chart-item" title="${labels[i]}: ₦${value.toLocaleString()}">
+                    <div class="chart-bar-fill" 
+                         style="height: ${height}px; background: linear-gradient(to top, ${barColor}, rgba(111, 77, 56, 0.3));">
+                    </div>
+                    <span class="chart-label">${labels[i]}</span>
+                    <span class="chart-value" style="font-size:10px;color:#6c757d;margin-top:4px;">
+                        ₦${(value / 1000).toFixed(0)}k
+                    </span>
+                </div>
+            `;
+        }).join('');
+        
+        // Update summary stats below chart
+        updateChartSummary(values, period);
+        
+    } catch (error) {
+        console.error('Chart error:', error);
+        chartContainer.innerHTML = '<div style="text-align:center;color:#dc3545;">Failed to load chart data</div>';
+    }
+}
+
+function groupSalesByDay(orders, days) {
+    const result = [];
+    const now = new Date();
+    
+    for (let i = days - 1; i >= 0; i--) {
+        const date = new Date(now);
+        date.setDate(date.getDate() - i);
+        
+        const dayStart = new Date(date);
+        dayStart.setHours(0, 0, 0, 0);
+        
+        const dayEnd = new Date(date);
+        dayEnd.setHours(23, 59, 59, 999);
+        
+        // Sum orders for this day
+        const dayTotal = orders
+            .filter(o => {
+                const orderDate = new Date(o.created_at);
+                return orderDate >= dayStart && orderDate <= dayEnd;
+            })
+            .reduce((sum, o) => sum + parseFloat(o.total_amount || 0), 0);
+        
+        // Format label
+        const label = days === 7 
+            ? date.toLocaleDateString('en-NG', { weekday: 'short' }) // Mon, Tue, etc.
+            : date.toLocaleDateString('en-NG', { day: 'numeric', month: 'short' }); // 1 Apr, 2 Apr
+        
+        result.push({ label, total: dayTotal, date });
+    }
+    
+    return result;
+}
+
+function updateChartSummary(values, period) {
+    const total = values.reduce((a, b) => a + b, 0);
+    const avg = total / values.length;
+    const max = Math.max(...values);
+    
+    // You can add a summary element below the chart if you want
+    console.log(`📊 Sales Summary (${period}): Total: ₦${total.toLocaleString()}, Avg: ₦${avg.toLocaleString()}, Peak: ₦${max.toLocaleString()}`);
+}
+
+// Handle period selector change
+function changeChartPeriod(period) {
+    renderSalesChart(period);
 }
 
 // Image Handling
@@ -1966,8 +2151,6 @@ function toggleEditColor(element) {
 
 // ==================== INVENTORY MANAGEMENT ====================
 
-// ==================== INVENTORY MANAGEMENT (FULLY FIXED) ====================
-
 async function renderInventory() {
     const tbody = document.getElementById('inventoryTable');
     if (!tbody) return;
@@ -1975,13 +2158,11 @@ async function renderInventory() {
     tbody.innerHTML = '<tr><td colspan="6" class="text-center">Loading inventory...</td></tr>';
     
     try {
-        // FIXED: Try to fetch from inventory table first
         let { data: inventoryItems, error } = await supabaseClient
             .from('inventory')
             .select('*')
             .order('status_updated_at', { ascending: false });
         
-        // If inventory table fails or is empty, fallback to orders with inventory_status
         if (error || !inventoryItems || inventoryItems.length === 0) {
             console.log('Inventory table empty or error, falling back to orders...');
             
@@ -1993,7 +2174,6 @@ async function renderInventory() {
             
             if (ordersError) throw ordersError;
             
-            // Convert orders to inventory format
             inventoryItems = orders.map(order => ({
                 id: order.id,
                 order_id: order.id,
@@ -2104,61 +2284,94 @@ function formatInventoryStatus(status) {
     return statusMap[status] || status;
 }
 
-// ==================== UPDATE INVENTORY STATUS (FULLY FIXED) ====================
+// ==================== UPDATE INVENTORY STATUS (FULLY CORRECTED) ====================
 async function updateInventoryStatus(inventoryId, orderId, newStatus) {
     showLoading(true);
     
     try {
         const now = new Date().toISOString();
         
-        // Try to update inventory table first
-        const { error: inventoryError } = await supabaseClient
-            .from('inventory')
-            .update({ 
-                current_status: newStatus,
-                status_updated_at: now,
-                updated_at: now
-            })
-            .eq('id', inventoryId);
-        
-        // Also update orders table (this is the source of truth)
-        const { error: orderError } = await supabaseClient
+        // STEP 1: Check current order state
+        const { data: currentOrder, error: checkError } = await supabaseClient
             .from('orders')
-            .update({ 
-                inventory_status: newStatus,
-                inventory_updated_at: now,
-                status: newStatus === 'delivered' ? 'delivered' : 'processing',
-                updated_at: now
-            })
-            .eq('id', orderId);
-        
-        if (orderError) throw orderError;
-        
-        // Get order details for notification
-        const { data: order, error: getError } = await supabaseClient
-            .from('orders')
-            .select('customer_email, customer_name, user_id, guest_session_id')
+            .select('status, inventory_status, customer_email, customer_name, user_id, guest_session_id')
             .eq('id', orderId)
             .single();
         
-        // Create notification for customer
-        if (order) {
+        if (checkError) throw checkError;
+        
+        console.log('Current order status:', currentOrder.inventory_status, '→ Changing to:', newStatus);
+        
+        // STEP 2: Determine correct orders.status - FIX: processing for non-delivered
+        let orderStatus;
+        if (newStatus === 'delivered') {
+            orderStatus = 'delivered';
+        } else {
+            orderStatus = 'processing';
+        }
+        
+        // STEP 3: Update orders table with CORRECT status logic
+        const { data: updatedOrder, error: updateError } = await supabaseClient
+            .from('orders')
+            .update({ 
+                status: orderStatus,
+                inventory_status: newStatus,
+                inventory_updated_at: now,
+                updated_at: now
+            })
+            .eq('id', orderId)
+            .select('id, status, inventory_status, customer_email, customer_name, user_id, guest_session_id')
+            .single();
+        
+        if (updateError) {
+            console.error('Orders update error:', updateError);
+            throw updateError;
+        }
+        
+        console.log('✅ Orders table updated:', updatedOrder.status, '/', updatedOrder.inventory_status);
+
+        // STEP 4: Try inventory update (best effort)
+        try {
+            const { error: invError } = await supabaseClient
+                .from('inventory')
+                .upsert({ 
+                    order_id: orderId,
+                    customer_email: updatedOrder.customer_email,
+                    customer_name: updatedOrder.customer_name,
+                    current_status: newStatus,
+                    status_updated_at: now,
+                    updated_at: now
+                }, { 
+                    onConflict: 'order_id'
+                });
+            
+            if (invError) {
+                console.log('⚠️ Inventory upsert warning:', invError.message);
+            } else {
+                console.log('✅ Inventory table updated');
+            }
+        } catch (invError) {
+            console.log('Inventory update error (non-critical):', invError.message);
+        }
+        
+        // STEP 5: Create notification - FIXED: use insert() not upsert()
+        if (updatedOrder) {
             const statusMessages = {
                 'packaging': { 
                     title: 'Order Being Packaged 📦', 
-                    message: `Dear ${order.customer_name || 'Customer'}, your order #${orderId.toString().slice(-8).toUpperCase()} is being carefully packaged and prepared for shipment.` 
+                    message: `Dear ${updatedOrder.customer_name || 'Customer'}, your order #${orderId.toString().slice(-8).toUpperCase()} is being carefully packaged.` 
                 },
                 'shipping': { 
                     title: 'Order Shipped 🚚', 
-                    message: `Dear ${order.customer_name || 'Customer'}, great news! Your order #${orderId.toString().slice(-8).toUpperCase()} has been shipped and is on its way to you.` 
+                    message: `Dear ${updatedOrder.customer_name || 'Customer'}, your order #${orderId.toString().slice(-8).toUpperCase()} has been shipped.` 
                 },
                 'transferring': { 
                     title: 'Order In Transit 🔄', 
-                    message: `Dear ${order.customer_name || 'Customer'}, your order #${orderId.toString().slice(-8).toUpperCase()} is currently being transferred to your local delivery center.` 
+                    message: `Dear ${updatedOrder.customer_name || 'Customer'}, your order #${orderId.toString().slice(-8).toUpperCase()} is being transferred.` 
                 },
                 'delivered': { 
                     title: 'Order Delivered ✅', 
-                    message: `Dear ${order.customer_name || 'Customer'}, your order #${orderId.toString().slice(-8).toUpperCase()} has been delivered! We hope you love your purchase.` 
+                    message: `Dear ${updatedOrder.customer_name || 'Customer'}, your order #${orderId.toString().slice(-8).toUpperCase()} has been delivered!` 
                 }
             };
             
@@ -2173,25 +2386,25 @@ async function updateInventoryStatus(inventoryId, orderId, newStatus) {
                     created_at: now
                 };
 
-                if (order.customer_email) {
-                    notificationData.customer_email = order.customer_email;
-                    notificationData.user_email = order.customer_email;
+                if (updatedOrder.customer_email) {
+                    notificationData.customer_email = updatedOrder.customer_email;
+                    notificationData.user_email = updatedOrder.customer_email;
                 }
-                
-                if (order.user_id) {
-                    notificationData.user_id = order.user_id;
-                }
-                
-                if (order.guest_session_id) {
-                    notificationData.guest_session_id = order.guest_session_id;
-                }
+                if (updatedOrder.user_id) notificationData.user_id = updatedOrder.user_id;
+                if (updatedOrder.guest_session_id) notificationData.guest_session_id = updatedOrder.guest_session_id;
 
-                await supabaseClient.from('notifications').insert(notificationData);
+                // FIXED: Simple insert, no onConflict
+                supabaseClient
+                    .from('notifications')
+                    .insert(notificationData)
+                    .then(({ error }) => {
+                        if (error) console.log('Notification warning:', error.message);
+                    });
             }
         }
         
         showNotification('Success', `Status updated to ${formatInventoryStatus(newStatus)}`, 'success');
-        await renderInventory();
+        updateInventoryRow(orderId, newStatus, now);
         
     } catch (error) {
         console.error('Error updating status:', error);
@@ -2199,6 +2412,31 @@ async function updateInventoryStatus(inventoryId, orderId, newStatus) {
     } finally {
         showLoading(false);
     }
+}
+
+function updateInventoryRow(orderId, newStatus, timestamp) {
+    const tbody = document.getElementById('inventoryTable');
+    if (!tbody) return;
+    
+    const rows = tbody.querySelectorAll('tr');
+    rows.forEach(row => {
+        const orderIdCell = row.querySelector('td:first-child strong');
+        if (orderIdCell && orderIdCell.textContent.includes(orderId.toString().slice(-8).toUpperCase())) {
+            const statusCell = row.querySelector('td:nth-child(4) .status-badge');
+            if (statusCell) {
+                statusCell.className = `status-badge ${getInventoryStatusClass(newStatus)}`;
+                statusCell.textContent = formatInventoryStatus(newStatus);
+            }
+            
+            const timeCell = row.querySelector('td:nth-child(5)');
+            if (timeCell) {
+                timeCell.textContent = new Date(timestamp).toLocaleString('en-NG');
+            }
+            
+            const select = row.querySelector('td:nth-child(6) select');
+            if (select) select.value = newStatus;
+        }
+    });
 }
 
 async function createInventoryRecord(orderId, customerEmail, customerName, items) {
@@ -2222,24 +2460,22 @@ async function createInventoryRecord(orderId, customerEmail, customerName, items
             updated_at: new Date().toISOString()
         };
         
-        if (order) {
-            if (order.guest_session_id) insertData.guest_session_id = order.guest_session_id;
-            if (order.user_id) insertData.user_id = order.user_id;
-        }
+        if (order?.guest_session_id) insertData.guest_session_id = order.guest_session_id;
+        if (order?.user_id) insertData.user_id = order.user_id;
         
-        // Try to insert, but don't fail if inventory record already exists
         const { error } = await supabaseClient
             .from('inventory')
-            .insert(insertData)
-            .select();
+            .upsert(insertData, {
+                onConflict: 'order_id',
+                ignoreDuplicates: true
+            });
         
-        if (error && !error.message.includes('duplicate')) {
-            console.error('Error creating inventory record:', error);
-        } else {
-            console.log('✅ Inventory record created for order:', orderId);
+        if (error && error.code !== '23505' && error.code !== '42501') {
+            console.log('Inventory warning:', error.message);
         }
+        
     } catch (error) {
-        console.error('Error creating inventory record:', error);
+        console.log('Inventory error (non-critical):', error.message);
     }
 }
 
@@ -2252,7 +2488,6 @@ async function renderOrders() {
     tbody.innerHTML = '<tr><td colspan="7" class="text-center">Loading orders...</td></tr>';
     
     try {
-        // FIXED: Removed .in() filter to show ALL orders including 'rejected' and 'cancelled'
         const { data: orders, error } = await supabaseClient
             .from('orders')
             .select('*')
@@ -2355,7 +2590,7 @@ function getStatusClass(status) {
         'shipped': 'status-shipped',
         'delivered': 'status-delivered',
         'rejected': 'status-rejected',
-        'cancelled': 'status-rejected'  // Use rejected styling for cancelled too
+        'cancelled': 'status-rejected'
     };
     return statusMap[status] || 'status-pending';
 }
@@ -2379,78 +2614,103 @@ function formatStatus(status) {
     return statusMap[status] || status;
 }
 
-// ==================== ACCEPT ORDER (FULLY FIXED) ====================
+// ==================== ACCEPT ORDER (FULLY CORRECTED) ====================
 async function acceptOrder(orderId) {
     if (!confirm('Are you sure you want to ACCEPT this order?')) return;
     
     showLoading(true);
     
     try {
-        const { data: order, error: getError } = await supabaseClient
+        const now = new Date().toISOString();
+        
+        // STEP 1: Check if already processed
+        const { data: currentOrder, error: checkError } = await supabaseClient
             .from('orders')
-            .select('*')
+            .select('status, customer_email, customer_name, items, user_id, guest_session_id')
             .eq('id', orderId)
             .single();
+            
+        if (checkError) throw checkError;
         
-        if (getError) throw getError;
-        if (!order) throw new Error('Order not found');
-
-        const now = new Date().toISOString();
-
-        // FIXED: Removed .single() to avoid coercion error
-        const { data: updatedData, error: updateError } = await supabaseClient
-            .from('orders')
-            .update({ 
-                status: 'paid',
-                inventory_status: 'packaging',
-                inventory_updated_at: now,
-                updated_at: now
-            })
-            .eq('id', orderId)
-            .select();
-
-        if (updateError) throw updateError;
+        if (currentOrder.status === 'paid' || currentOrder.status === 'delivered') {
+            showNotification('Info', 'Order already accepted', 'success');
+            return;
+        }
         
-        console.log('Order accepted, updated data:', updatedData);
+        // STEP 2: Update with retry logic
+        let retryCount = 0;
+        let updatedOrder = null;
+        let lastError = null;
+        
+        while (retryCount < 3 && !updatedOrder) {
+            try {
+                const { data, error } = await supabaseClient
+                    .from('orders')
+                    .update({ 
+                        status: 'paid',
+                        inventory_status: 'packaging',
+                        inventory_updated_at: now,
+                        updated_at: now
+                    })
+                    .eq('id', orderId)
+                    .select('id, status, customer_email, customer_name, items, user_id, guest_session_id')
+                    .single();
+                
+                if (error) throw error;
+                updatedOrder = data;
+                
+            } catch (err) {
+                lastError = err;
+                retryCount++;
+                
+                if ((err.code === '409' || err.code === '23505') && retryCount < 3) {
+                    console.log(`Conflict detected, retrying... (${retryCount}/3)`);
+                    await new Promise(r => setTimeout(r, 500 * retryCount));
+                } else {
+                    throw err;
+                }
+            }
+        }
+        
+        if (!updatedOrder) {
+            throw lastError || new Error('Failed to update order after retries');
+        }
 
-        // Create inventory record
-        await createInventoryRecord(orderId, order.customer_email, order.customer_name, order.items);
+        // STEP 3: Create inventory record (best effort)
+        try {
+            await createInventoryRecord(orderId, updatedOrder.customer_email, updatedOrder.customer_name, updatedOrder.items);
+        } catch (invError) {
+            console.log('Inventory record creation skipped:', invError.message);
+        }
 
-        // Send notification to customer
+        // STEP 4: Send notification - FIXED: use insert() not upsert()
         const notificationData = {
             type: 'accepted',
             title: 'Payment Confirmed ✅',
-            message: `Dear ${order.customer_name || 'Customer'}, your payment for order #${orderId.slice(-8).toUpperCase()} has been verified. Your order is now being processed.`,
+            message: `Dear ${updatedOrder.customer_name || 'Customer'}, your payment for order #${orderId.toString().slice(-8).toUpperCase()} has been verified. Your order is now being processed.`,
             order_id: orderId,
             is_read: false,
             created_at: now
         };
 
-        if (order.customer_email) {
-            notificationData.customer_email = order.customer_email;
-            notificationData.user_email = order.customer_email;
+        if (updatedOrder.customer_email) {
+            notificationData.customer_email = updatedOrder.customer_email;
+            notificationData.user_email = updatedOrder.customer_email;
         }
-        
-        if (order.user_id) {
-            notificationData.user_id = order.user_id;
-        }
-        
-        if (order.guest_session_id) {
-            notificationData.guest_session_id = order.guest_session_id;
-        }
+        if (updatedOrder.user_id) notificationData.user_id = updatedOrder.user_id;
+        if (updatedOrder.guest_session_id) notificationData.guest_session_id = updatedOrder.guest_session_id;
 
-        const { error: notifError } = await supabaseClient.from('notifications').insert(notificationData);
-        
-        if (notifError) {
-            console.error('Notification error:', notifError);
-        }
+        // FIXED: Simple insert, no onConflict
+        supabaseClient
+            .from('notifications')
+            .insert(notificationData)
+            .then(({ error }) => {
+                if (error) console.log('Notification warning:', error.message);
+            });
 
         showNotification('Success', `Order ${orderId} accepted and marked as PAID`, 'success');
+        debouncedRefresh();
         
-        // Force refresh the orders list
-        await renderOrders();
-        await updateStats();
-
     } catch (error) {
         console.error('Error accepting order:', error);
         showNotification('Error', 'Failed to accept order: ' + error.message, 'error');
@@ -2459,74 +2719,95 @@ async function acceptOrder(orderId) {
     }
 }
 
-// ==================== REJECT ORDER (FULLY FIXED) ====================
+// ==================== REJECT ORDER (FULLY CORRECTED) ====================
 async function rejectOrder(orderId) {
     if (!confirm('Are you sure you want to REJECT this order?')) return;
     
     showLoading(true);
     
     try {
-        const { data: order, error: getError } = await supabaseClient
-            .from('orders')
-            .select('*')
-            .eq('id', orderId)
-            .single();
-        
-        if (getError) throw getError;
-        if (!order) throw new Error('Order not found');
-        
         const now = new Date().toISOString();
         
-        // FIXED: Removed .single() to avoid coercion error
-        const { data: updatedData, error: updateError } = await supabaseClient
+        // STEP 1: Check current state
+        const { data: currentOrder, error: checkError } = await supabaseClient
             .from('orders')
-            .update({ 
-                status: 'rejected',
-                inventory_status: 'rejected',
-                inventory_updated_at: now,
-                updated_at: now
-            })
+            .select('status, customer_email, customer_name, user_id, guest_session_id')
             .eq('id', orderId)
-            .select();
+            .single();
+            
+        if (checkError) throw checkError;
         
-        if (updateError) throw updateError;
+        if (currentOrder.status === 'rejected') {
+            showNotification('Info', 'Order already rejected', 'success');
+            return;
+        }
         
-        console.log('Order rejected, updated data:', updatedData);
+        // STEP 2: Update with retry logic
+        let retryCount = 0;
+        let updatedOrder = null;
+        let lastError = null;
         
-        // Send notification
+        while (retryCount < 3 && !updatedOrder) {
+            try {
+                const { data, error } = await supabaseClient
+                    .from('orders')
+                    .update({ 
+                        status: 'rejected',
+                        inventory_status: 'rejected',
+                        inventory_updated_at: now,
+                        updated_at: now
+                    })
+                    .eq('id', orderId)
+                    .select('id, status, customer_email, customer_name, user_id, guest_session_id')
+                    .single();
+                
+                if (error) throw error;
+                updatedOrder = data;
+                
+            } catch (err) {
+                lastError = err;
+                retryCount++;
+                
+                if ((err.code === '409' || err.code === '23505') && retryCount < 3) {
+                    console.log(`Conflict detected, retrying... (${retryCount}/3)`);
+                    await new Promise(r => setTimeout(r, 500 * retryCount));
+                } else {
+                    throw err;
+                }
+            }
+        }
+        
+        if (!updatedOrder) {
+            throw lastError || new Error('Failed to reject order after retries');
+        }
+        
+        // STEP 3: Send notification - FIXED: use insert() not upsert()
         const notificationData = {
             type: 'rejected',
             title: 'Order Rejected ❌',
-            message: `Dear ${order.customer_name || 'Customer'}, we could not verify your payment for order #${orderId.slice(-8).toUpperCase()}. Please contact support if you believe this is an error.`,
+            message: `Dear ${updatedOrder.customer_name || 'Customer'}, we could not verify your payment for order #${orderId.toString().slice(-8).toUpperCase()}. Please contact support if you believe this is an error.`,
             order_id: orderId,
             is_read: false,
             created_at: now
         };
 
-        if (order.customer_email) {
-            notificationData.customer_email = order.customer_email;
-            notificationData.user_email = order.customer_email;
+        if (updatedOrder.customer_email) {
+            notificationData.customer_email = updatedOrder.customer_email;
+            notificationData.user_email = updatedOrder.customer_email;
         }
-        
-        if (order.user_id) {
-            notificationData.user_id = order.user_id;
-        }
-        
-        if (order.guest_session_id) {
-            notificationData.guest_session_id = order.guest_session_id;
-        }
+        if (updatedOrder.user_id) notificationData.user_id = updatedOrder.user_id;
+        if (updatedOrder.guest_session_id) notificationData.guest_session_id = updatedOrder.guest_session_id;
 
-        const { error: notifError } = await supabaseClient.from('notifications').insert(notificationData);
-        
-        if (notifError) {
-            console.error('Notification insert error:', notifError);
-        }
+        // FIXED: Simple insert, no onConflict
+        supabaseClient
+            .from('notifications')
+            .insert(notificationData)
+            .then(({ error }) => {
+                if (error) console.log('Notification warning:', error.message);
+            });
         
         showNotification('Success', `Order ${orderId} has been REJECTED`, 'success');
-        
-        // Force refresh the orders list
-        await renderOrders();
-        await updateStats();
+        debouncedRefresh();
         
     } catch (error) {
         console.error('Error rejecting order:', error);
