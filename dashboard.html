@@ -739,73 +739,6 @@ async function getCurrentUserEmail() {
             .form-row { grid-template-columns: 1fr; }
             .modal { max-height: 95vh; }
         }
-
-        .chart-container {
-    height: 250px;
-    position: relative;
-    padding: 20px 0 40px 0;
-}
-
-.chart-bar {
-    display: flex;
-    align-items: flex-end;
-    justify-content: space-around;
-    height: 100%;
-    gap: 8px;
-    padding: 0 10px;
-}
-
-.chart-item {
-    display: flex;
-    flex-direction: column;
-    align-items: center;
-    gap: 4px;
-    flex: 1;
-    max-width: 60px;
-    transition: transform 0.2s;
-    cursor: pointer;
-}
-
-.chart-item:hover {
-    transform: translateY(-4px);
-}
-
-.chart-bar-fill {
-    width: 100%;
-    min-height: 4px;
-    border-radius: 4px 4px 0 0;
-    transition: height 0.5s ease;
-    position: relative;
-}
-
-.chart-bar-fill::after {
-    content: attr(data-value);
-    position: absolute;
-    top: -20px;
-    left: 50%;
-    transform: translateX(-50%);
-    font-size: 10px;
-    color: var(--brand-color);
-    font-weight: 600;
-    opacity: 0;
-    transition: opacity 0.2s;
-}
-
-.chart-item:hover .chart-bar-fill::after {
-    opacity: 1;
-}
-
-.chart-label {
-    font-size: 11px;
-    color: var(--text-secondary);
-    font-weight: 500;
-}
-
-.chart-value {
-    font-size: 10px;
-    color: var(--text-muted);
-}
-
     </style>
 </head>
 <body>
@@ -1053,60 +986,47 @@ async function getCurrentUserEmail() {
                         </div>
                     </div>
 
-                 <div class="card">
-    <div class="card-header">
-        <h3 class="card-title">Sales Overview</h3>
-        <select class="form-select" id="chartPeriod" onchange="changeChartPeriod(this.value)" style="width: auto;">
-            <option value="7days">Last 7 Days</option>
-            <option value="30days">Last 30 Days</option>
-            <option value="90days">Last 3 Months</option>
-        </select>
-    </div>
-    <div class="card-body">
-        <div class="chart-container">
-            <div class="chart-bar" id="salesChart"></div>
-        </div>
-        <div id="chartSummary" style="display: flex; justify-content: space-around; margin-top: 16px; padding-top: 16px; border-top: 1px solid var(--border-color);">
-            <div style="text-align: center;">
-                <div style="font-size: 12px; color: var(--text-secondary); text-transform: uppercase;">Total Sales</div>
-                <div style="font-size: 18px; font-weight: 700; color: var(--brand-color);" id="chartTotalSales">₦0</div>
-            </div>
-            <div style="text-align: center;">
-                <div style="font-size: 12px; color: var(--text-secondary); text-transform: uppercase;">Average/Day</div>
-                <div style="font-size: 18px; font-weight: 700; color: var(--text-primary);" id="chartAvgSales">₦0</div>
-            </div>
-            <div style="text-align: center;">
-                <div style="font-size: 12px; color: var(--text-secondary); text-transform: uppercase;">Best Day</div>
-                <div style="font-size: 18px; font-weight: 700; color: var(--success);" id="chartBestDay">₦0</div>
-            </div>
-        </div>
-    </div>
-</div>
+                    <div class="card">
+                        <div class="card-header">
+                            <h3 class="card-title">Sales Overview</h3>
+                            <select class="form-select" style="width: auto;">
+                                <option>Last 7 Days</option>
+                                <option>Last 30 Days</option>
+                                <option>Last 3 Months</option>
+                            </select>
+                        </div>
+                        <div class="card-body">
+                            <div class="chart-container">
+                                <div class="chart-bar" id="salesChart"></div>
+                            </div>
+                        </div>
+                    </div>
 
-<div class="card">
-    <div class="card-header">
-        <h3 class="card-title">Recent Orders</h3>
-        <button class="btn btn-secondary btn-sm" onclick="navigateTo('orders')">View All</button>
-    </div>
-    <div class="card-body">
-        <div class="table-container">
-            <table class="data-table">
-                <thead>
-                    <tr>
-                        <th>Order ID</th>
-                        <th>Customer</th>
-                        <th>Product</th>
-                        <th>Amount</th>
-                        <th>Status</th>
-                    </tr>
-                </thead>
-                <tbody id="recentOrdersTable">
-                    <tr><td colspan="5" class="text-center">Loading...</td></tr>
-                </tbody>
-            </table>
-        </div>
-    </div>
-</div>
+                    <div class="card">
+                        <div class="card-header">
+                            <h3 class="card-title">Recent Orders</h3>
+                            <button class="btn btn-secondary btn-sm" onclick="navigateTo('orders')">View All</button>
+                        </div>
+                        <div class="card-body">
+                            <div class="table-container">
+                                <table class="data-table">
+                                    <thead>
+                                        <tr>
+                                            <th>Order ID</th>
+                                            <th>Customer</th>
+                                            <th>Product</th>
+                                            <th>Amount</th>
+                                            <th>Status</th>
+                                        </tr>
+                                    </thead>
+                                    <tbody id="recentOrdersTable">
+                                        <tr><td colspan="5" class="text-center">Loading...</td></tr>
+                                    </tbody>
+                                </table>
+                            </div>
+                        </div>
+                    </div>
+                </div>
 
                 <!-- Orders Page -->
                 <div class="page" id="page-orders">
@@ -1748,7 +1668,7 @@ document.addEventListener('DOMContentLoaded', async () => {
     initEventListeners();
     await loadProducts();
     await updateStats();
-    await renderSalesChart('7days');
+    renderSalesChart();
     setupRealtimeSubscription();
     
     const savedImage = localStorage.getItem('adminProfileImage');
@@ -1920,114 +1840,13 @@ function navigateTo(page) {
 }
 
 // Chart
-// ==================== DYNAMIC SALES CHART ====================
-
-async function renderSalesChart(period = '7days') {
-    const chartContainer = document.getElementById('salesChart');
-    if (!chartContainer) return;
-    
-    // Show loading state
-    chartContainer.innerHTML = '<div style="display:flex;align-items:center;justify-content:center;height:100%;color:#6c757d;">Loading chart...</div>';
-    
-    try {
-        // Calculate date range based on period
-        const now = new Date();
-        const daysMap = { '7days': 7, '30days': 30, '90days': 90 };
-        const days = daysMap[period] || 7;
-        const startDate = new Date(now);
-        startDate.setDate(startDate.getDate() - days);
-        
-        // Fetch orders within date range
-        const { data: orders, error } = await supabaseClient
-            .from('orders')
-            .select('total_amount, created_at, status')
-            .gte('created_at', startDate.toISOString())
-            .lte('created_at', now.toISOString())
-            .in('status', ['paid', 'delivered', 'processing']); // Only count completed/processing orders
-        
-        if (error) throw error;
-        
-        // Group sales by day
-        const salesData = groupSalesByDay(orders || [], days);
-        
-        // Generate labels and values
-        const labels = salesData.map(d => d.label);
-        const values = salesData.map(d => d.total);
-        const max = Math.max(...values, 1); // Prevent division by zero
-        
-        // Build chart HTML
-        chartContainer.innerHTML = values.map((value, i) => {
-            const height = (value / max * 200); // Max height 200px
-            const isToday = i === values.length - 1;
-            const barColor = isToday ? 'var(--brand-color)' : 'rgba(111, 77, 56, 0.6)';
-            
-            return `
-                <div class="chart-item" title="${labels[i]}: ₦${value.toLocaleString()}">
-                    <div class="chart-bar-fill" 
-                         style="height: ${height}px; background: linear-gradient(to top, ${barColor}, rgba(111, 77, 56, 0.3));">
-                    </div>
-                    <span class="chart-label">${labels[i]}</span>
-                    <span class="chart-value" style="font-size:10px;color:#6c757d;margin-top:4px;">
-                        ₦${(value / 1000).toFixed(0)}k
-                    </span>
-                </div>
-            `;
-        }).join('');
-        
-        // Update summary stats below chart
-        updateChartSummary(values, period);
-        
-    } catch (error) {
-        console.error('Chart error:', error);
-        chartContainer.innerHTML = '<div style="text-align:center;color:#dc3545;">Failed to load chart data</div>';
-    }
-}
-
-function groupSalesByDay(orders, days) {
-    const result = [];
-    const now = new Date();
-    
-    for (let i = days - 1; i >= 0; i--) {
-        const date = new Date(now);
-        date.setDate(date.getDate() - i);
-        
-        const dayStart = new Date(date);
-        dayStart.setHours(0, 0, 0, 0);
-        
-        const dayEnd = new Date(date);
-        dayEnd.setHours(23, 59, 59, 999);
-        
-        // Sum orders for this day
-        const dayTotal = orders
-            .filter(o => {
-                const orderDate = new Date(o.created_at);
-                return orderDate >= dayStart && orderDate <= dayEnd;
-            })
-            .reduce((sum, o) => sum + parseFloat(o.total_amount || 0), 0);
-        
-        // Format label
-        const label = days === 7 
-            ? date.toLocaleDateString('en-NG', { weekday: 'short' }) // Mon, Tue, etc.
-            : date.toLocaleDateString('en-NG', { day: 'numeric', month: 'short' }); // 1 Apr, 2 Apr
-        
-        result.push({ label, total: dayTotal, date });
-    }
-    
-    return result;
-}
-
-function updateChartSummary(values, period) {
-    const total = values.reduce((a, b) => a + b, 0);
-    const avg = total / values.length;
-    const max = Math.max(...values);
-    
-    // You can add a summary element below the chart if you want
-    console.log(`📊 Sales Summary (${period}): Total: ₦${total.toLocaleString()}, Avg: ₦${avg.toLocaleString()}, Peak: ₦${max.toLocaleString()}`);
-}
-
-// Handle period selector change
-function changeChartPeriod(period) {
-    renderSalesChart(period);
+function renderSalesChart() {
+    const data = [45, 62, 38, 75, 55, 88, 72];
+    const labels = ['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun'];
+    const max = Math.max(...data);
+    document.getElementById('salesChart').innerHTML = data.map((value, i) => 
+        `<div class="chart-item"><div class="chart-bar-fill" style="height: ${(value / max * 200)}px;"></div><span class="chart-label">${labels[i]}</span></div>`
+    ).join('');
 }
 
 // Image Handling
