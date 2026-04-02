@@ -986,21 +986,21 @@ async function getCurrentUserEmail() {
                         </div>
                     </div>
 
-                    <div class="card">
-                        <div class="card-header">
-                            <h3 class="card-title">Sales Overview</h3>
-                            <select class="form-select" style="width: auto;">
-                                <option>Last 7 Days</option>
-                                <option>Last 30 Days</option>
-                                <option>Last 3 Months</option>
-                            </select>
-                        </div>
-                        <div class="card-body">
-                            <div class="chart-container">
-                                <div class="chart-bar" id="salesChart"></div>
-                            </div>
-                        </div>
-                    </div>
+                   <div class="card">
+    <div class="card-header">
+        <h3 class="card-title">Sales Overview</h3>
+        <select class="form-select" id="chartPeriod" style="width: auto;">
+            <option value="7">Last 7 Days</option>
+            <option value="30">Last 30 Days</option>
+            <option value="90">Last 3 Months</option>
+        </select>
+    </div>
+    <div class="card-body">
+        <div class="chart-container" id="salesChart" style="height: 300px;">
+            <!-- Canvas will be created here by JavaScript -->
+        </div>
+    </div>
+</div>
 
                     <div class="card">
                         <div class="card-header">
@@ -1192,70 +1192,96 @@ async function getCurrentUserEmail() {
                     </div>
                 </div>
 
-                <!-- Customers Page -->
-                <div class="page" id="page-customers">
-                    <div class="card">
-                        <div class="card-header">
-                            <h3 class="card-title">Customers</h3>
-                            <div class="search-box" style="margin: 0; max-width: 300px;">
-                                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-                                    <circle cx="11" cy="11" r="8"></circle>
-                                    <path d="m21 21-4.35-4.35"></path>
-                                </svg>
-                                <input type="text" placeholder="Search customers..." id="customerSearch"/>
-                            </div>
-                        </div>
-                        <div class="card-body">
-                            <div class="table-container">
-                                <table class="data-table">
-                                    <thead>
-                                        <tr>
-                                            <th>Customer</th>
-                                            <th>Email</th>
-                                            <th>Phone</th>
-                                            <th>Orders</th>
-                                            <th>Total Spent</th>
-                                            <th>Actions</th>
-                                        </tr>
-                                    </thead>
-                                    <tbody id="customersTable">
-                                        <tr><td colspan="6" class="text-center">Coming soon...</td></tr>
-                                    </tbody>
-                                </table>
-                            </div>
-                        </div>
-                    </div>
+             <!-- Customers Page -->
+<div class="page" id="page-customers">
+    <div class="card">
+        <div class="card-header">
+            <h3 class="card-title">All Customers</h3>
+            <div class="table-toolbar" style="margin: 0;">
+                <div class="search-box">
+                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                        <circle cx="11" cy="11" r="8"></circle>
+                        <path d="m21 21-4.35-4.35"></path>
+                    </svg>
+                    <input type="text" placeholder="Search customers..." id="customerSearch" oninput="filterCustomers()"/>
                 </div>
-
-                <!-- Shipping Page -->
-                <div class="page" id="page-shipping">
-                    <div class="card">
-                        <div class="card-header">
-                            <h3 class="card-title">Shipping Management</h3>
-                        </div>
-                        <div class="card-body">
-                            <div class="table-container">
-                                <table class="data-table">
-                                    <thead>
-                                        <tr>
-                                            <th>Order ID</th>
-                                            <th>Customer</th>
-                                            <th>Address</th>
-                                            <th>Current Status</th>
-                                            <th>Tracking</th>
-                                            <th>Update Status</th>
-                                        </tr>
-                                    </thead>
-                                    <tbody id="shippingTable">
-                                        <tr><td colspan="6" class="text-center">Coming soon...</td></tr>
-                                    </tbody>
-                                </table>
-                            </div>
-                        </div>
-                    </div>
+                <select class="form-select" id="customerTypeFilter" onchange="filterCustomers()" style="width: auto;">
+                    <option value="">All Types</option>
+                    <option value="registered">Registered Users</option>
+                    <option value="guest">Guest Buyers</option>
+                </select>
+            </div>
+        </div>
+        <div class="card-body">
+            <div class="table-container">
+                <table class="data-table">
+                    <thead>
+                        <tr>
+                            <th>Customer</th>
+                            <th>Email</th>
+                            <th>Phone</th>
+                            <th>Type</th>
+                            <th>Orders</th>
+                            <th>Total Spent</th>
+                            <th>Last Order</th>
+                            <th>Actions</th>
+                        </tr>
+                    </thead>
+                    <tbody id="customersTable">
+                        <tr><td colspan="8" class="text-center">Loading customers...</td></tr>
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    </div>
+</div>
+<!-- Shipping Page -->
+<div class="page" id="page-shipping">
+    <div class="card">
+        <div class="card-header">
+            <h3 class="card-title">Shipping Management</h3>
+            <div class="table-toolbar" style="margin: 0;">
+                <div class="search-box">
+                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                        <circle cx="11" cy="11" r="8"></circle>
+                        <path d="m21 21-4.35-4.35"></path>
+                    </svg>
+                    <input type="text" placeholder="Search shipping orders..." id="shippingSearch" oninput="filterShipping()"/>
                 </div>
+                <select class="form-select" id="shippingStatusFilter" onchange="filterShipping()" style="width: auto;">
+                    <option value="">All Shipping Status</option>
+                    <option value="packaging">Packaging</option>
+                    <option value="shipping">Shipping</option>
+                    <option value="transferring">In Transit</option>
+                    <option value="delivered">Delivered</option>
+                </select>
+            </div>
+        </div>
+        <div class="card-body">
+            <div class="table-container">
+                <table class="data-table">
+                    <thead>
+                        <tr>
+                            <th>Order ID</th>
+                            <th>Customer</th>
+                            <th>Product</th>
+                            <th>Shipping Address</th>
+                            <th>Status</th>
+                            <th>Tracking Number</th>
+                            <th>Carrier</th>
+                            <th>Actions</th>
+                        </tr>
+                    </thead>
+                    <tbody id="shippingTable">
+                        <tr><td colspan="8" class="text-center">Loading shipping orders...</td></tr>
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    </div>
+</div>
 
-                <!-- Discounts Page -->
+               <!-- Discounts Page -->
                 <div class="page" id="page-discounts">
                     <div class="card">
                         <div class="card-header">
@@ -1662,13 +1688,14 @@ let allOrders = [];
 let inventoryOrders = [];
 let realtimeSubscription = null;
 let refreshTimeout = null;
+let salesChartInstance = null;
 
 // Initialize
 document.addEventListener('DOMContentLoaded', async () => {
     initEventListeners();
     await loadProducts();
     await updateStats();
-    renderSalesChart();
+    await initSalesChart(); // Initialize chart on load
     setupRealtimeSubscription();
     
     const savedImage = localStorage.getItem('adminProfileImage');
@@ -1735,9 +1762,827 @@ function initEventListeners() {
             }
         });
     });
+    
+    // Chart period selector
+    document.getElementById('chartPeriod')?.addEventListener('change', async (e) => {
+        const days = parseInt(e.target.value);
+        await loadChartData(days);
+    });
 }
 
-// Debounced refresh utility to prevent concurrent reloads
+// ==================== PROFESSIONAL BAR CHART WITH TOOLTIPS ====================
+
+
+let chartTooltip = null;
+
+async function initSalesChart() {
+    // Create canvas element
+    const container = document.getElementById('salesChart');
+    if (!container) return;
+    
+    // Clear existing content
+    container.innerHTML = '';
+    container.style.cssText = 'width: 100%; height: 100%; position: relative;';
+    
+    // Create canvas
+    const canvas = document.createElement('canvas');
+    canvas.id = 'salesChartCanvas';
+    canvas.style.cssText = 'width: 100%; height: 100%; display: block; cursor: pointer;';
+    container.appendChild(canvas);
+    
+    // Create tooltip element
+    createTooltip(container);
+    
+    // Set canvas size
+    const rect = container.getBoundingClientRect();
+    canvas.width = rect.width * window.devicePixelRatio;
+    canvas.height = rect.height * window.devicePixelRatio;
+    
+    // Store reference
+    salesChartInstance = {
+        canvas: canvas,
+        ctx: canvas.getContext('2d'),
+        data: [],
+        labels: [],
+        colors: {
+            primary: '#6F4D38',
+            primaryLight: 'rgba(111, 77, 56, 0.7)',
+            grid: '#e9ecef',
+            text: '#6c757d',
+            background: '#ffffff',
+            tooltipBg: '#1a1a1a',
+            tooltipText: '#ffffff'
+        },
+        animationProgress: 0,
+        isAnimating: false,
+        barPositions: [], // Store bar positions for hit detection
+        hoveredBar: -1,   // Currently hovered/tapped bar index
+        isTouch: false    // Track if device is touch-based
+    };
+    
+    // Detect touch device
+    salesChartInstance.isTouch = window.matchMedia('(pointer: coarse)').matches;
+    
+    // Handle resize
+    window.addEventListener('resize', debounce(() => {
+        if (!salesChartInstance) return;
+        const rect = container.getBoundingClientRect();
+        canvas.width = rect.width * window.devicePixelRatio;
+        canvas.height = rect.height * window.devicePixelRatio;
+        renderChart();
+    }, 100));
+    
+    // Add interaction handlers
+    setupChartInteractions(canvas, container);
+    
+    // Load initial data
+    await loadChartData(7);
+}
+
+function createTooltip(container) {
+    // Remove existing tooltip if any
+    const existing = document.getElementById('chartTooltip');
+    if (existing) existing.remove();
+    
+    // Create tooltip element
+    chartTooltip = document.createElement('div');
+    chartTooltip.id = 'chartTooltip';
+    chartTooltip.style.cssText = `
+        position: absolute;
+        background: #1a1a1a;
+        color: white;
+        padding: 12px 16px;
+        border-radius: 8px;
+        font-size: 13px;
+        pointer-events: none;
+        opacity: 0;
+        transition: opacity 0.2s, transform 0.2s;
+        z-index: 1000;
+        box-shadow: 0 4px 12px rgba(0,0,0,0.15);
+        max-width: 200px;
+        transform: translateY(10px);
+    `;
+    container.appendChild(chartTooltip);
+}
+
+function setupChartInteractions(canvas, container) {
+    const instance = salesChartInstance;
+    if (!instance) return;
+    
+    // Mouse events (desktop)
+    canvas.addEventListener('mousemove', (e) => {
+        if (instance.isTouch) return; // Skip on touch devices
+        
+        const rect = canvas.getBoundingClientRect();
+        const x = (e.clientX - rect.left) * window.devicePixelRatio;
+        const y = (e.clientY - rect.top) * window.devicePixelRatio;
+        
+        handleChartHover(x, y, e.clientX, e.clientY, container);
+    });
+    
+    canvas.addEventListener('mouseleave', () => {
+        if (instance.isTouch) return;
+        hideTooltip();
+        instance.hoveredBar = -1;
+        renderChart(1, false);
+    });
+    
+    // Touch/Click events (mobile + desktop)
+    canvas.addEventListener('click', (e) => {
+        const rect = canvas.getBoundingClientRect();
+        const x = (e.clientX - rect.left) * window.devicePixelRatio;
+        const y = (e.clientY - rect.top) * window.devicePixelRatio;
+        
+        const barIndex = getBarAtPosition(x, y);
+        
+        if (barIndex !== -1) {
+            // Toggle tooltip on click
+            if (instance.hoveredBar === barIndex) {
+                hideTooltip();
+                instance.hoveredBar = -1;
+            } else {
+                instance.hoveredBar = barIndex;
+                showTooltipForBar(barIndex, e.clientX, e.clientY, container);
+            }
+            renderChart(1, false);
+        } else {
+            hideTooltip();
+            instance.hoveredBar = -1;
+            renderChart(1, false);
+        }
+    });
+    
+    // Hide tooltip when clicking outside chart
+    document.addEventListener('click', (e) => {
+        if (!container.contains(e.target)) {
+            hideTooltip();
+            instance.hoveredBar = -1;
+            renderChart(1, false);
+        }
+    });
+}
+
+function handleChartHover(x, y, clientX, clientY, container) {
+    const instance = salesChartInstance;
+    if (!instance) return;
+    
+    const barIndex = getBarAtPosition(x, y);
+    
+    if (barIndex !== instance.hoveredBar) {
+        instance.hoveredBar = barIndex;
+        renderChart(1, false); // Redraw to show highlight
+        
+        if (barIndex !== -1) {
+            showTooltipForBar(barIndex, clientX, clientY, container);
+        } else {
+            hideTooltip();
+        }
+    }
+}
+
+function getBarAtPosition(x, y) {
+    const instance = salesChartInstance;
+    if (!instance || instance.barPositions.length === 0) return -1;
+    
+    // Check if y is within chart area (below top padding, above bottom)
+    const displayHeight = instance.canvas.height / window.devicePixelRatio;
+    const padding = { top: 40, bottom: 50 };
+    
+    if (y < padding.top * window.devicePixelRatio || 
+        y > (displayHeight - padding.bottom) * window.devicePixelRatio) {
+        return -1;
+    }
+    
+    // Find which bar x falls into
+    for (let i = 0; i < instance.barPositions.length; i++) {
+        const bar = instance.barPositions[i];
+        if (x >= bar.x && x <= bar.x + bar.width) {
+            return i;
+        }
+    }
+    return -1;
+}
+
+function showTooltipForBar(index, clientX, clientY, container) {
+    const instance = salesChartInstance;
+    if (!instance || !chartTooltip) return;
+    
+    const value = instance.data[index];
+    const label = instance.labels[index];
+    
+    // Calculate day-over-day change
+    let changePercent = 0;
+    let changeText = '';
+    if (index > 0 && instance.data[index - 1] > 0) {
+        changePercent = ((value - instance.data[index - 1]) / instance.data[index - 1]) * 100;
+        const arrow = changePercent >= 0 ? '↑' : '↓';
+        changeText = `<div style="color: ${changePercent >= 0 ? '#28a745' : '#dc3545'}; font-size: 11px; margin-top: 4px;">
+            ${arrow} ${Math.abs(changePercent).toFixed(1)}% from yesterday
+        </div>`;
+    }
+    
+    // Format full date
+    const days = parseInt(document.getElementById('chartPeriod')?.value || 7);
+    const date = new Date();
+    date.setDate(date.getDate() - (days - 1 - index));
+    const fullDate = date.toLocaleDateString('en-NG', { 
+        weekday: 'long', 
+        year: 'numeric', 
+        month: 'long', 
+        day: 'numeric' 
+    });
+    
+    // Build tooltip content
+    chartTooltip.innerHTML = `
+        <div style="font-weight: 600; margin-bottom: 4px;">${fullDate}</div>
+        <div style="font-size: 16px; font-weight: 700; color: #fff;">₦${value.toLocaleString()}</div>
+        ${changeText}
+    `;
+    
+    // Position tooltip
+    const containerRect = container.getBoundingClientRect();
+    const tooltipRect = chartTooltip.getBoundingClientRect();
+    
+    let left = clientX - containerRect.left - (tooltipRect.width / 2);
+    let top = clientY - containerRect.top - tooltipRect.height - 15;
+    
+    // Keep within container bounds
+    if (left < 10) left = 10;
+    if (left + tooltipRect.width > containerRect.width - 10) {
+        left = containerRect.width - tooltipRect.width - 10;
+    }
+    if (top < 10) top = clientY - containerRect.top + 20; // Show below if no space above
+    
+    chartTooltip.style.left = `${left}px`;
+    chartTooltip.style.top = `${top}px`;
+    chartTooltip.style.opacity = '1';
+    chartTooltip.style.transform = 'translateY(0)';
+}
+
+function hideTooltip() {
+    if (chartTooltip) {
+        chartTooltip.style.opacity = '0';
+        chartTooltip.style.transform = 'translateY(10px)';
+    }
+}
+
+async function loadChartData(days = 7) {
+    if (!salesChartInstance) return;
+    
+    try {
+        // Calculate date range
+        const endDate = new Date();
+        const startDate = new Date();
+        startDate.setDate(endDate.getDate() - days + 1);
+        startDate.setHours(0, 0, 0, 0);
+        
+        // Fetch orders from Supabase
+        const { data: orders, error } = await supabaseClient
+            .from('orders')
+            .select('created_at, total_amount, status')
+            .gte('created_at', startDate.toISOString())
+            .lte('created_at', endDate.toISOString())
+            .in('status', ['paid', 'delivered', 'processing', 'shipped']);
+        
+        if (error) throw error;
+        
+        // Process data into daily buckets
+        const dailyData = processDailyData(orders || [], days);
+        
+        salesChartInstance.data = dailyData.values;
+        salesChartInstance.labels = dailyData.labels;
+        
+        // Animate chart
+        animateChart();
+        
+    } catch (err) {
+        console.error('Chart data error:', err);
+        // Use demo data as fallback
+        salesChartInstance.data = [45000, 62000, 38000, 75000, 55000, 88000, 72000];
+        salesChartInstance.labels = ['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun'];
+        animateChart();
+    }
+}
+
+function processDailyData(orders, days) {
+    const values = new Array(days).fill(0);
+    const labels = [];
+    const today = new Date();
+    
+    // Generate labels (day names)
+    for (let i = days - 1; i >= 0; i--) {
+        const d = new Date(today);
+        d.setDate(d.getDate() - i);
+        labels.push(d.toLocaleDateString('en-NG', { weekday: 'short' }));
+    }
+    
+    // Aggregate orders by day
+    orders.forEach(order => {
+        const orderDate = new Date(order.created_at);
+        const daysAgo = Math.floor((today - orderDate) / (1000 * 60 * 60 * 24));
+        
+        if (daysAgo >= 0 && daysAgo < days) {
+            values[days - 1 - daysAgo] += parseFloat(order.total_amount || 0);
+        }
+    });
+    
+    return { values, labels };
+}
+
+function animateChart() {
+    if (!salesChartInstance) return;
+    
+    salesChartInstance.isAnimating = true;
+    salesChartInstance.animationProgress = 0;
+    
+    const duration = 800;
+    const startTime = performance.now();
+    
+    const animate = (currentTime) => {
+        const elapsed = currentTime - startTime;
+        salesChartInstance.animationProgress = Math.min(elapsed / duration, 1);
+        
+        // Ease out cubic
+        const easeProgress = 1 - Math.pow(1 - salesChartInstance.animationProgress, 3);
+        
+        renderChart(easeProgress);
+        
+        if (salesChartInstance.animationProgress < 1) {
+            requestAnimationFrame(animate);
+        } else {
+            salesChartInstance.isAnimating = false;
+        }
+    };
+    
+    requestAnimationFrame(animate);
+}
+
+function renderChart(progress = 1, animateHighlight = true) {
+    if (!salesChartInstance) return;
+    
+    const { canvas, ctx, data, labels, colors, hoveredBar } = salesChartInstance;
+    
+    // Get actual display size
+    const displayWidth = canvas.width / window.devicePixelRatio;
+    const displayHeight = canvas.height / window.devicePixelRatio;
+    
+    // Clear canvas
+    ctx.clearRect(0, 0, canvas.width, canvas.height);
+    
+    // Scale for retina displays
+    ctx.save();
+    ctx.scale(window.devicePixelRatio, window.devicePixelRatio);
+    
+    // Chart dimensions
+    const padding = { top: 40, right: 20, bottom: 50, left: 70 };
+    const chartWidth = displayWidth - padding.left - padding.right;
+    const chartHeight = displayHeight - padding.top - padding.bottom;
+    
+    if (data.length === 0) {
+        ctx.restore();
+        return;
+    }
+    
+    const maxValue = Math.max(...data, 1000);
+    const barCount = data.length;
+    const barSpacing = chartWidth / barCount;
+    const barWidth = Math.min(barSpacing * 0.6, 60);
+    
+    // Store bar positions for hit detection
+    salesChartInstance.barPositions = [];
+    
+    // Draw grid lines
+    drawGrid(ctx, padding, chartWidth, chartHeight, maxValue, colors);
+    
+    // Draw bars
+    data.forEach((value, index) => {
+        const barHeight = (value / maxValue) * chartHeight * progress;
+        const x = padding.left + (index * barSpacing) + (barSpacing - barWidth) / 2;
+        const y = padding.top + chartHeight - barHeight;
+        
+        // Store position for hit detection
+        salesChartInstance.barPositions.push({
+            x: x * window.devicePixelRatio,
+            y: y * window.devicePixelRatio,
+            width: barWidth * window.devicePixelRatio,
+            height: barHeight * window.devicePixelRatio,
+            index: index
+        });
+        
+        // Check if this bar is hovered
+        const isHovered = index === hoveredBar;
+        
+        // Create gradient
+        const gradient = ctx.createLinearGradient(0, y + barHeight, 0, y);
+        if (isHovered) {
+            // Brighter color when hovered
+            gradient.addColorStop(0, '#8B6F5C');
+            gradient.addColorStop(1, 'rgba(139, 111, 92, 0.8)');
+        } else {
+            gradient.addColorStop(0, colors.primary);
+            gradient.addColorStop(1, colors.primaryLight);
+        }
+        
+        // Draw bar with rounded top
+        ctx.fillStyle = gradient;
+        
+        // Add shadow if hovered
+        if (isHovered) {
+            ctx.shadowColor = 'rgba(111, 77, 56, 0.3)';
+            ctx.shadowBlur = 10;
+            ctx.shadowOffsetY = 4;
+        }
+        
+        roundRect(ctx, x, y, barWidth, barHeight, 6, true, true, false, false);
+        ctx.fill();
+        
+        // Reset shadow
+        ctx.shadowColor = 'transparent';
+        ctx.shadowBlur = 0;
+        ctx.shadowOffsetY = 0;
+        
+        // Draw value label on top (only when animation completes)
+        if (progress > 0.8 && value > 0) {
+            ctx.fillStyle = isHovered ? '#8B6F5C' : colors.primary;
+            ctx.font = isHovered ? 'bold 12px Inter, sans-serif' : 'bold 11px Inter, sans-serif';
+            ctx.textAlign = 'center';
+            ctx.textBaseline = 'bottom';
+            ctx.globalAlpha = (progress - 0.8) * 5;
+            ctx.fillText('₦' + formatCompactNumber(value), x + barWidth / 2, y - 6);
+            ctx.globalAlpha = 1;
+        }
+    });
+    
+    // Draw X-axis labels
+    ctx.fillStyle = colors.text;
+    ctx.font = '12px Inter, sans-serif';
+    ctx.textAlign = 'center';
+    ctx.textBaseline = 'top';
+    
+    labels.forEach((label, index) => {
+        const x = padding.left + (index * barSpacing) + barSpacing / 2;
+        const isHovered = index === hoveredBar;
+        ctx.fillStyle = isHovered ? colors.primary : colors.text;
+        ctx.font = isHovered ? '600 12px Inter, sans-serif' : '12px Inter, sans-serif';
+        ctx.fillText(label, x, padding.top + chartHeight + 12);
+    });
+    
+    ctx.restore();
+}
+
+function drawGrid(ctx, padding, chartWidth, chartHeight, maxValue, colors) {
+    ctx.strokeStyle = colors.grid;
+    ctx.lineWidth = 1;
+    ctx.font = '11px Inter, sans-serif';
+    ctx.fillStyle = colors.text;
+    ctx.textAlign = 'right';
+    ctx.textBaseline = 'middle';
+    
+    const gridLines = 5;
+    for (let i = 0; i <= gridLines; i++) {
+        const y = padding.top + (chartHeight * i / gridLines);
+        const value = maxValue * (1 - i / gridLines);
+        
+        // Grid line
+        ctx.beginPath();
+        ctx.moveTo(padding.left, y);
+        ctx.lineTo(padding.left + chartWidth, y);
+        ctx.stroke();
+        
+        // Y-axis label
+        ctx.fillText('₦' + formatCompactNumber(value), padding.left - 10, y);
+    }
+}
+
+function roundRect(ctx, x, y, width, height, radius, tl, tr, br, bl) {
+    ctx.beginPath();
+    ctx.moveTo(x + (tl ? radius : 0), y);
+    ctx.lineTo(x + width - (tr ? radius : 0), y);
+    if (tr) ctx.quadraticCurveTo(x + width, y, x + width, y + radius);
+    ctx.lineTo(x + width, y + height - (br ? radius : 0));
+    if (br) ctx.quadraticCurveTo(x + width, y + height, x + width - radius, y + height);
+    ctx.lineTo(x + (bl ? radius : 0), y + height);
+    if (bl) ctx.quadraticCurveTo(x, y + height, x, y + height - radius);
+    ctx.lineTo(x, y + (tl ? radius : 0));
+    if (tl) ctx.quadraticCurveTo(x, y, x + radius, y);
+    ctx.closePath();
+}
+
+function formatCompactNumber(num) {
+    if (num >= 1000000) return (num / 1000000).toFixed(1) + 'M';
+    if (num >= 1000) return (num / 1000).toFixed(0) + 'k';
+    return num.toFixed(0);
+}
+
+function debounce(func, wait) {
+    let timeout;
+    return function executedFunction(...args) {
+        const later = () => {
+            clearTimeout(timeout);
+            func(...args);
+        };
+        clearTimeout(timeout);
+        timeout = setTimeout(later, wait);
+    };
+}
+
+// ==================== END CHART ====================
+
+// ==================== CUSTOMERS MANAGEMENT ====================
+
+let allCustomers = [];
+let customersRealtimeSubscription = null;
+
+async function renderCustomers() {
+    const tbody = document.getElementById('customersTable');
+    if (!tbody) return;
+    
+    tbody.innerHTML = '<tr><td colspan="8" class="text-center">Loading customers...</td></tr>';
+    
+    try {
+        // Fetch all orders to extract customer data
+        const { data: orders, error: ordersError } = await supabaseClient
+            .from('orders')
+            .select('customer_email, customer_name, customer_phone, user_id, guest_session_id, total_amount, created_at, status')
+            .order('created_at', { ascending: false });
+        
+        if (ordersError) throw ordersError;
+        
+        // Process orders to aggregate customer data
+        const customerMap = new Map();
+        
+        orders?.forEach(order => {
+            // Create unique key based on email or user_id
+            const key = order.user_id || order.customer_email?.toLowerCase() || order.guest_session_id || 'unknown';
+            
+            if (!customerMap.has(key)) {
+                customerMap.set(key, {
+                    id: key,
+                    name: order.customer_name || 'Guest',
+                    email: order.customer_email || 'N/A',
+                    phone: order.customer_phone || 'N/A',
+                    type: order.user_id ? 'registered' : 'guest',
+                    orders: 0,
+                    totalSpent: 0,
+                    lastOrderDate: order.created_at,
+                    firstOrderDate: order.created_at,
+                    userId: order.user_id,
+                    guestSessionId: order.guest_session_id
+                });
+            }
+            
+            const customer = customerMap.get(key);
+            customer.orders++;
+            // Only count completed/paid orders in total spent
+            if (['paid', 'delivered', 'processing', 'shipped'].includes(order.status)) {
+                customer.totalSpent += parseFloat(order.total_amount || 0);
+            }
+            // Update last order date if this order is newer
+            if (new Date(order.created_at) > new Date(customer.lastOrderDate)) {
+                customer.lastOrderDate = order.created_at;
+            }
+        });
+        
+        // Convert map to array and sort by total spent (highest first)
+        allCustomers = Array.from(customerMap.values()).sort((a, b) => b.totalSpent - a.totalSpent);
+        
+        displayCustomers(allCustomers);
+        
+        // Setup realtime subscription for customer updates
+        setupCustomersRealtimeSubscription();
+        
+    } catch (error) {
+        console.error('Error loading customers:', error);
+        tbody.innerHTML = '<tr><td colspan="8" class="text-center" style="color: #dc3545;">Failed to load customers: ' + error.message + '</td></tr>';
+    }
+}
+
+function displayCustomers(customers) {
+    const tbody = document.getElementById('customersTable');
+    if (!tbody) return;
+    
+    if (!customers || customers.length === 0) {
+        tbody.innerHTML = '<tr><td colspan="8" class="text-center">No customers found</td></tr>';
+        return;
+    }
+    
+    tbody.innerHTML = customers.map(customer => {
+        const initials = getInitials(customer.name);
+        const lastOrder = new Date(customer.lastOrderDate).toLocaleDateString('en-NG');
+        const typeBadge = customer.type === 'registered' 
+            ? '<span class="status-badge status-paid" style="font-size: 11px;">Registered</span>'
+            : '<span class="status-badge status-pending" style="font-size: 11px;">Guest</span>';
+        
+        return `
+            <tr>
+                <td>
+                    <div style="display: flex; align-items: center; gap: 10px;">
+                        <div class="customer-avatar" style="width: 36px; height: 36px; font-size: 12px; background: linear-gradient(135deg, #6F4D38 0%, #8B6F5C 100%); color: white; border-radius: 50%; display: flex; align-items: center; justify-content: center; font-weight: 600;">
+                            ${initials}
+                        </div>
+                        <span style="font-weight: 500;">${customer.name}</span>
+                    </div>
+                </td>
+                <td>${customer.email}</td>
+                <td>${customer.phone !== 'N/A' ? customer.phone : '-'}</td>
+                <td>${typeBadge}</td>
+                <td><strong>${customer.orders}</strong></td>
+                <td style="color: #6F4D38; font-weight: 600;">₦${customer.totalSpent.toLocaleString()}</td>
+                <td style="font-size: 12px; color: #6c757d;">${lastOrder}</td>
+                <td>
+                    <div class="action-btns">
+                        <button class="action-btn view" onclick="viewCustomerDetails('${customer.id}')" title="View Details">
+                            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                                <path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"></path>
+                                <circle cx="12" cy="12" r="3"></circle>
+                            </svg>
+                        </button>
+                        <button class="action-btn edit" onclick="sendCustomerEmail('${customer.email}')" title="Send Email" ${customer.email === 'N/A' ? 'disabled style="opacity:0.5;"' : ''}>
+                            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                                <path d="M4 4h16c1.1 0 2 .9 2 2v12c0 1.1-.9 2-2 2H4c-1.1 0-2-.9-2-2V6c0-1.1.9-2 2-2z"></path>
+                                <polyline points="22,6 12,13 2,6"></polyline>
+                            </svg>
+                        </button>
+                    </div>
+                </td>
+            </tr>
+        `;
+    }).join('');
+}
+
+function filterCustomers() {
+    const search = document.getElementById('customerSearch')?.value.toLowerCase() || '';
+    const type = document.getElementById('customerTypeFilter')?.value || '';
+    
+    let filtered = allCustomers.filter(customer => {
+        const matchesSearch = !search || 
+            customer.name.toLowerCase().includes(search) || 
+            customer.email.toLowerCase().includes(search) ||
+            customer.phone.toLowerCase().includes(search);
+        
+        const matchesType = !type || customer.type === type;
+        
+        return matchesSearch && matchesType;
+    });
+    
+    displayCustomers(filtered);
+}
+
+async function viewCustomerDetails(customerId) {
+    const customer = allCustomers.find(c => c.id === customerId);
+    if (!customer) return;
+    
+    try {
+        let orders;
+        
+        // Build query based on customer type
+        if (customer.userId) {
+            // Registered user - query by user_id
+            const { data, error } = await supabaseClient
+                .from('orders')
+                .select('*')
+                .eq('user_id', customer.userId)
+                .order('created_at', { ascending: false });
+            
+            if (error) throw error;
+            orders = data;
+        } else if (customer.email !== 'N/A') {
+            // Guest user - query by email
+            const { data, error } = await supabaseClient
+                .from('orders')
+                .select('*')
+                .ilike('customer_email', customer.email)
+                .order('created_at', { ascending: false });
+            
+            if (error) throw error;
+            orders = data;
+        } else {
+            // Fallback - no valid identifier
+            orders = [];
+        }
+        
+        const ordersHtml = orders?.length > 0 ? orders.map(order => {
+            const itemsList = order.items?.map(item => `${item.name} (x${item.quantity})`).join(', ') || 'N/A';
+            return `
+                <div style="padding: 12px; background: #f8f9fa; border-radius: 8px; margin-bottom: 8px; border-left: 3px solid #6F4D38;">
+                    <div style="display: flex; justify-content: space-between; margin-bottom: 6px;">
+                        <strong style="color: #6F4D38;">${order.id}</strong>
+                        <span class="status-badge ${getStatusClass(order.status)}">${formatStatus(order.status)}</span>
+                    </div>
+                    <div style="font-size: 13px; color: #6c757d; margin-bottom: 4px;">${itemsList}</div>
+                    <div style="display: flex; justify-content: space-between; font-size: 13px;">
+                        <span>${new Date(order.created_at).toLocaleDateString('en-NG')}</span>
+                        <strong>₦${parseFloat(order.total_amount).toLocaleString()}</strong>
+                    </div>
+                </div>
+            `;
+        }).join('') : '<p style="color: #6c757d; text-align: center; padding: 20px;">No orders found</p>';
+        
+        const avgOrder = customer.orders > 0 ? (customer.totalSpent / customer.orders).toFixed(0) : 0;
+        
+        const modalHtml = `
+            <div class="modal-overlay active" id="customerDetailsModal" onclick="if(event.target===this)closeCustomerDetails()">
+                <div class="modal" style="max-width: 600px; max-height: 90vh; overflow-y: auto;">
+                    <div class="modal-header">
+                        <h3 class="modal-title">Customer Details</h3>
+                        <button class="modal-close" onclick="closeCustomerDetails()">
+                            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                                <line x1="18" y1="6" x2="6" y2="18"></line>
+                                <line x1="6" y1="6" x2="18" y2="18"></line>
+                            </svg>
+                        </button>
+                    </div>
+                    <div class="modal-body">
+                        <div style="text-align: center; margin-bottom: 24px; padding: 20px; background: linear-gradient(135deg, #f9f5f2 0%, #ffffff 100%); border-radius: 12px;">
+                            <div style="width: 80px; height: 80px; background: linear-gradient(135deg, #6F4D38 0%, #8B6F5C 100%); color: white; border-radius: 50%; display: flex; align-items: center; justify-content: center; font-weight: 600; font-size: 28px; margin: 0 auto 16px;">
+                                ${getInitials(customer.name)}
+                            </div>
+                            <h2 style="font-size: 20px; margin-bottom: 8px;">${customer.name}</h2>
+                            <p style="color: #6c757d; margin-bottom: 4px;">${customer.email}</p>
+                            ${customer.phone !== 'N/A' ? `<p style="color: #6c757d;">${customer.phone}</p>` : ''}
+                            ${customer.type === 'registered' 
+                                ? '<span class="status-badge status-paid" style="margin-top: 8px;">Registered User</span>' 
+                                : '<span class="status-badge status-pending" style="margin-top: 8px;">Guest Buyer</span>'}
+                        </div>
+                        
+                        <div style="display: grid; grid-template-columns: repeat(3, 1fr); gap: 16px; margin-bottom: 24px;">
+                            <div style="text-align: center; padding: 16px; background: #f8f9fa; border-radius: 8px;">
+                                <div style="font-size: 24px; font-weight: 700; color: #6F4D38;">${customer.orders}</div>
+                                <div style="font-size: 12px; color: #6c757d; text-transform: uppercase;">Total Orders</div>
+                            </div>
+                            <div style="text-align: center; padding: 16px; background: #f8f9fa; border-radius: 8px;">
+                                <div style="font-size: 24px; font-weight: 700; color: #6F4D38;">₦${(customer.totalSpent / 1000).toFixed(0)}k</div>
+                                <div style="font-size: 12px; color: #6c757d; text-transform: uppercase;">Total Spent</div>
+                            </div>
+                            <div style="text-align: center; padding: 16px; background: #f8f9fa; border-radius: 8px;">
+                                <div style="font-size: 24px; font-weight: 700; color: #6F4D38;">₦${avgOrder}</div>
+                                <div style="font-size: 12px; color: #6c757d; text-transform: uppercase;">Avg Order</div>
+                            </div>
+                        </div>
+                        
+                        <div style="margin-bottom: 16px;">
+                            <h4 style="font-size: 14px; text-transform: uppercase; color: #6c757d; margin-bottom: 12px; letter-spacing: 0.5px;">Order History</h4>
+                            <div style="max-height: 300px; overflow-y: auto;">
+                                ${ordersHtml}
+                            </div>
+                        </div>
+                    </div>
+                    <div class="modal-footer">
+                        <button class="btn btn-secondary" onclick="closeCustomerDetails()">Close</button>
+                        ${customer.email !== 'N/A' && customer.email.includes('@') ? `
+                            <button class="btn btn-primary" onclick="sendCustomerEmail('${customer.email}'); closeCustomerDetails();">Send Email</button>
+                        ` : ''}
+                    </div>
+                </div>
+            </div>
+        `;
+        
+        const existingModal = document.getElementById('customerDetailsModal');
+        if (existingModal) existingModal.remove();
+        document.body.insertAdjacentHTML('beforeend', modalHtml);
+        document.body.style.overflow = 'hidden';
+        
+    } catch (error) {
+        console.error('Error fetching customer details:', error);
+        showNotification('Error', 'Failed to load customer details: ' + error.message, 'error');
+    }
+}
+
+function closeCustomerDetails() {
+    const modal = document.getElementById('customerDetailsModal');
+    if (modal) {
+        modal.remove();
+        document.body.style.overflow = '';
+    }
+}
+
+function sendCustomerEmail(email) {
+    if (email === 'N/A' || !email || !email.includes('@')) {
+        showNotification('Error', 'No valid email address available for this customer', 'error');
+        return;
+    }
+    window.location.href = `mailto:${email}`;
+    showNotification('Success', 'Email client opened', 'success');
+}
+
+function setupCustomersRealtimeSubscription() {
+    if (customersRealtimeSubscription) {
+        supabaseClient.removeChannel(customersRealtimeSubscription);
+    }
+    
+    customersRealtimeSubscription = supabaseClient
+        .channel('customers-orders-' + Date.now())
+        .on('postgres_changes', {
+            event: 'INSERT',
+            schema: 'public',
+            table: 'orders'
+        }, (payload) => {
+            console.log('New order - refreshing customers:', payload);
+            setTimeout(() => renderCustomers(), 1000);
+        })
+        .subscribe();
+}
+
 function debouncedRefresh() {
     if (refreshTimeout) clearTimeout(refreshTimeout);
     refreshTimeout = setTimeout(() => {
@@ -1747,7 +2592,7 @@ function debouncedRefresh() {
     }, 500);
 }
 
-// Realtime subscription with proper cleanup and debouncing
+
 function setupRealtimeSubscription() {
     if (realtimeSubscription) {
         realtimeSubscription.forEach(sub => supabaseClient.removeChannel(sub));
@@ -1780,7 +2625,6 @@ function setupRealtimeSubscription() {
     realtimeSubscription = [ordersChannel];
 }
 
-// Sidebar Functions
 function toggleSidebar() {
     const sidebar = document.getElementById('sidebar');
     const overlay = document.getElementById('sidebarOverlay');
@@ -1829,24 +2673,21 @@ function navigateTo(page) {
     document.querySelectorAll('.page').forEach(p => p.classList.remove('active'));
     document.getElementById('page-' + page)?.classList.add('active');
     
-    switch(page) {
-        case 'dashboard': renderDashboard(); break;
+     switch(page) {
+        case 'dashboard': 
+            renderDashboard(); 
+            setTimeout(() => initSalesChart(), 100);
+            break;
         case 'orders': renderOrders(); break;
         case 'inventory': renderInventory(); break;
         case 'products': loadProducts(); break;
+        case 'customers': renderCustomers(); break;
+        case 'shipping': 
+    renderShipping(); 
+    break;
     }
     
     window.scrollTo({ top: 0, behavior: 'smooth' });
-}
-
-// Chart
-function renderSalesChart() {
-    const data = [45, 62, 38, 75, 55, 88, 72];
-    const labels = ['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun'];
-    const max = Math.max(...data);
-    document.getElementById('salesChart').innerHTML = data.map((value, i) => 
-        `<div class="chart-item"><div class="chart-bar-fill" style="height: ${(value / max * 200)}px;"></div><span class="chart-label">${labels[i]}</span></div>`
-    ).join('');
 }
 
 // Image Handling
@@ -1927,7 +2768,6 @@ function updateEditExistingPreview() {
     `).join('');
 }
 
-// Size & Color Selection
 function toggleSize(element) {
     element.classList.toggle('active');
     const size = element.dataset.size;
@@ -2103,14 +2943,12 @@ function formatInventoryStatus(status) {
     return statusMap[status] || status;
 }
 
-// ==================== UPDATE INVENTORY STATUS (FULLY CORRECTED) ====================
 async function updateInventoryStatus(inventoryId, orderId, newStatus) {
     showLoading(true);
     
     try {
         const now = new Date().toISOString();
         
-        // STEP 1: Check current order state
         const { data: currentOrder, error: checkError } = await supabaseClient
             .from('orders')
             .select('status, inventory_status, customer_email, customer_name, user_id, guest_session_id')
@@ -2119,17 +2957,8 @@ async function updateInventoryStatus(inventoryId, orderId, newStatus) {
         
         if (checkError) throw checkError;
         
-        console.log('Current order status:', currentOrder.inventory_status, '→ Changing to:', newStatus);
+        let orderStatus = newStatus === 'delivered' ? 'delivered' : 'processing';
         
-        // STEP 2: Determine correct orders.status - FIX: processing for non-delivered
-        let orderStatus;
-        if (newStatus === 'delivered') {
-            orderStatus = 'delivered';
-        } else {
-            orderStatus = 'processing';
-        }
-        
-        // STEP 3: Update orders table with CORRECT status logic
         const { data: updatedOrder, error: updateError } = await supabaseClient
             .from('orders')
             .update({ 
@@ -2142,16 +2971,10 @@ async function updateInventoryStatus(inventoryId, orderId, newStatus) {
             .select('id, status, inventory_status, customer_email, customer_name, user_id, guest_session_id')
             .single();
         
-        if (updateError) {
-            console.error('Orders update error:', updateError);
-            throw updateError;
-        }
-        
-        console.log('✅ Orders table updated:', updatedOrder.status, '/', updatedOrder.inventory_status);
+        if (updateError) throw updateError;
 
-        // STEP 4: Try inventory update (best effort)
         try {
-            const { error: invError } = await supabaseClient
+            await supabaseClient
                 .from('inventory')
                 .upsert({ 
                     order_id: orderId,
@@ -2160,38 +2983,17 @@ async function updateInventoryStatus(inventoryId, orderId, newStatus) {
                     current_status: newStatus,
                     status_updated_at: now,
                     updated_at: now
-                }, { 
-                    onConflict: 'order_id'
-                });
-            
-            if (invError) {
-                console.log('⚠️ Inventory upsert warning:', invError.message);
-            } else {
-                console.log('✅ Inventory table updated');
-            }
+                }, { onConflict: 'order_id' });
         } catch (invError) {
-            console.log('Inventory update error (non-critical):', invError.message);
+            console.log('Inventory update warning:', invError.message);
         }
         
-        // STEP 5: Create notification - FIXED: use insert() not upsert()
         if (updatedOrder) {
             const statusMessages = {
-                'packaging': { 
-                    title: 'Order Being Packaged 📦', 
-                    message: `Dear ${updatedOrder.customer_name || 'Customer'}, your order #${orderId.toString().slice(-8).toUpperCase()} is being carefully packaged.` 
-                },
-                'shipping': { 
-                    title: 'Order Shipped 🚚', 
-                    message: `Dear ${updatedOrder.customer_name || 'Customer'}, your order #${orderId.toString().slice(-8).toUpperCase()} has been shipped.` 
-                },
-                'transferring': { 
-                    title: 'Order In Transit 🔄', 
-                    message: `Dear ${updatedOrder.customer_name || 'Customer'}, your order #${orderId.toString().slice(-8).toUpperCase()} is being transferred.` 
-                },
-                'delivered': { 
-                    title: 'Order Delivered ✅', 
-                    message: `Dear ${updatedOrder.customer_name || 'Customer'}, your order #${orderId.toString().slice(-8).toUpperCase()} has been delivered!` 
-                }
+                'packaging': { title: 'Order Being Packaged 📦', message: `Dear ${updatedOrder.customer_name || 'Customer'}, your order #${orderId.toString().slice(-8).toUpperCase()} is being carefully packaged.` },
+                'shipping': { title: 'Order Shipped 🚚', message: `Dear ${updatedOrder.customer_name || 'Customer'}, your order #${orderId.toString().slice(-8).toUpperCase()} has been shipped.` },
+                'transferring': { title: 'Order In Transit 🔄', message: `Dear ${updatedOrder.customer_name || 'Customer'}, your order #${orderId.toString().slice(-8).toUpperCase()} is being transferred.` },
+                'delivered': { title: 'Order Delivered ✅', message: `Dear ${updatedOrder.customer_name || 'Customer'}, your order #${orderId.toString().slice(-8).toUpperCase()} has been delivered!` }
             };
             
             const statusInfo = statusMessages[newStatus];
@@ -2204,7 +3006,6 @@ async function updateInventoryStatus(inventoryId, orderId, newStatus) {
                     is_read: false,
                     created_at: now
                 };
-
                 if (updatedOrder.customer_email) {
                     notificationData.customer_email = updatedOrder.customer_email;
                     notificationData.user_email = updatedOrder.customer_email;
@@ -2212,13 +3013,9 @@ async function updateInventoryStatus(inventoryId, orderId, newStatus) {
                 if (updatedOrder.user_id) notificationData.user_id = updatedOrder.user_id;
                 if (updatedOrder.guest_session_id) notificationData.guest_session_id = updatedOrder.guest_session_id;
 
-                // FIXED: Simple insert, no onConflict
-                supabaseClient
-                    .from('notifications')
-                    .insert(notificationData)
-                    .then(({ error }) => {
-                        if (error) console.log('Notification warning:', error.message);
-                    });
+                supabaseClient.from('notifications').insert(notificationData).then(({ error }) => {
+                    if (error) console.log('Notification warning:', error.message);
+                });
             }
         }
         
@@ -2246,12 +3043,8 @@ function updateInventoryRow(orderId, newStatus, timestamp) {
                 statusCell.className = `status-badge ${getInventoryStatusClass(newStatus)}`;
                 statusCell.textContent = formatInventoryStatus(newStatus);
             }
-            
             const timeCell = row.querySelector('td:nth-child(5)');
-            if (timeCell) {
-                timeCell.textContent = new Date(timestamp).toLocaleString('en-NG');
-            }
-            
+            if (timeCell) timeCell.textContent = new Date(timestamp).toLocaleString('en-NG');
             const select = row.querySelector('td:nth-child(6) select');
             if (select) select.value = newStatus;
         }
@@ -2261,7 +3054,6 @@ function updateInventoryRow(orderId, newStatus, timestamp) {
 async function createInventoryRecord(orderId, customerEmail, customerName, items) {
     try {
         const productName = items && items[0] ? items[0].name : 'Unknown Product';
-        
         const { data: order } = await supabaseClient
             .from('orders')
             .select('guest_session_id, user_id')
@@ -2278,21 +3070,10 @@ async function createInventoryRecord(orderId, customerEmail, customerName, items
             created_at: new Date().toISOString(),
             updated_at: new Date().toISOString()
         };
-        
         if (order?.guest_session_id) insertData.guest_session_id = order.guest_session_id;
         if (order?.user_id) insertData.user_id = order.user_id;
         
-        const { error } = await supabaseClient
-            .from('inventory')
-            .upsert(insertData, {
-                onConflict: 'order_id',
-                ignoreDuplicates: true
-            });
-        
-        if (error && error.code !== '23505' && error.code !== '42501') {
-            console.log('Inventory warning:', error.message);
-        }
-        
+        await supabaseClient.from('inventory').upsert(insertData, { onConflict: 'order_id', ignoreDuplicates: true });
     } catch (error) {
         console.log('Inventory error (non-critical):', error.message);
     }
@@ -2337,11 +3118,7 @@ function displayOrders(orders) {
         const itemName = firstItem ? firstItem.name : 'N/A';
         const itemCount = order.items ? order.items.length : 0;
         const displayProduct = itemCount > 1 ? `${itemName} (+${itemCount - 1} more)` : itemName;
-        
-        const productImage = firstItem && firstItem.image 
-            ? firstItem.image 
-            : 'data:image/svg+xml,<svg xmlns=%22http://www.w3.org/2000/svg%22 width=%2240%22 height=%2240%22><rect fill=%22%23f9f5f2%22 width=%2240%22 height=%2240%22/><text fill=%22%236F4D38%22 x=%2220%22 y=%2225%22 font-size=%2216%22 text-anchor=%22middle%22>👕</text></svg>';
-        
+        const productImage = firstItem && firstItem.image ? firstItem.image : 'data:image/svg+xml,<svg xmlns=%22http://www.w3.org/2000/svg%22 width=%2240%22 height=%2240%22><rect fill=%22%23f9f5f2%22 width=%2240%22 height=%2240%22/><text fill=%22%236F4D38%22 x=%2220%22 y=%2225%22 font-size=%2216%22 text-anchor=%22middle%22>👕</text></svg>';
         const orderDate = new Date(order.created_at).toLocaleDateString('en-NG');
         const statusClass = getStatusClass(order.status);
         const customerInitials = getInitials(order.customer_name);
@@ -2433,16 +3210,12 @@ function formatStatus(status) {
     return statusMap[status] || status;
 }
 
-// ==================== ACCEPT ORDER (FULLY CORRECTED) ====================
 async function acceptOrder(orderId) {
     if (!confirm('Are you sure you want to ACCEPT this order?')) return;
-    
     showLoading(true);
     
     try {
         const now = new Date().toISOString();
-        
-        // STEP 1: Check if already processed
         const { data: currentOrder, error: checkError } = await supabaseClient
             .from('orders')
             .select('status, customer_email, customer_name, items, user_id, guest_session_id')
@@ -2450,13 +3223,11 @@ async function acceptOrder(orderId) {
             .single();
             
         if (checkError) throw checkError;
-        
         if (currentOrder.status === 'paid' || currentOrder.status === 'delivered') {
             showNotification('Info', 'Order already accepted', 'success');
             return;
         }
         
-        // STEP 2: Update with retry logic
         let retryCount = 0;
         let updatedOrder = null;
         let lastError = null;
@@ -2465,25 +3236,16 @@ async function acceptOrder(orderId) {
             try {
                 const { data, error } = await supabaseClient
                     .from('orders')
-                    .update({ 
-                        status: 'paid',
-                        inventory_status: 'packaging',
-                        inventory_updated_at: now,
-                        updated_at: now
-                    })
+                    .update({ status: 'paid', inventory_status: 'packaging', inventory_updated_at: now, updated_at: now })
                     .eq('id', orderId)
                     .select('id, status, customer_email, customer_name, items, user_id, guest_session_id')
                     .single();
-                
                 if (error) throw error;
                 updatedOrder = data;
-                
             } catch (err) {
                 lastError = err;
                 retryCount++;
-                
                 if ((err.code === '409' || err.code === '23505') && retryCount < 3) {
-                    console.log(`Conflict detected, retrying... (${retryCount}/3)`);
                     await new Promise(r => setTimeout(r, 500 * retryCount));
                 } else {
                     throw err;
@@ -2491,18 +3253,14 @@ async function acceptOrder(orderId) {
             }
         }
         
-        if (!updatedOrder) {
-            throw lastError || new Error('Failed to update order after retries');
-        }
+        if (!updatedOrder) throw lastError || new Error('Failed to update order after retries');
 
-        // STEP 3: Create inventory record (best effort)
         try {
             await createInventoryRecord(orderId, updatedOrder.customer_email, updatedOrder.customer_name, updatedOrder.items);
         } catch (invError) {
             console.log('Inventory record creation skipped:', invError.message);
         }
 
-        // STEP 4: Send notification - FIXED: use insert() not upsert()
         const notificationData = {
             type: 'accepted',
             title: 'Payment Confirmed ✅',
@@ -2511,7 +3269,6 @@ async function acceptOrder(orderId) {
             is_read: false,
             created_at: now
         };
-
         if (updatedOrder.customer_email) {
             notificationData.customer_email = updatedOrder.customer_email;
             notificationData.user_email = updatedOrder.customer_email;
@@ -2519,17 +3276,12 @@ async function acceptOrder(orderId) {
         if (updatedOrder.user_id) notificationData.user_id = updatedOrder.user_id;
         if (updatedOrder.guest_session_id) notificationData.guest_session_id = updatedOrder.guest_session_id;
 
-        // FIXED: Simple insert, no onConflict
-        supabaseClient
-            .from('notifications')
-            .insert(notificationData)
-            .then(({ error }) => {
-                if (error) console.log('Notification warning:', error.message);
-            });
+        supabaseClient.from('notifications').insert(notificationData).then(({ error }) => {
+            if (error) console.log('Notification warning:', error.message);
+        });
 
         showNotification('Success', `Order ${orderId} accepted and marked as PAID`, 'success');
         debouncedRefresh();
-        
     } catch (error) {
         console.error('Error accepting order:', error);
         showNotification('Error', 'Failed to accept order: ' + error.message, 'error');
@@ -2538,16 +3290,12 @@ async function acceptOrder(orderId) {
     }
 }
 
-// ==================== REJECT ORDER (FULLY CORRECTED) ====================
 async function rejectOrder(orderId) {
     if (!confirm('Are you sure you want to REJECT this order?')) return;
-    
     showLoading(true);
     
     try {
         const now = new Date().toISOString();
-        
-        // STEP 1: Check current state
         const { data: currentOrder, error: checkError } = await supabaseClient
             .from('orders')
             .select('status, customer_email, customer_name, user_id, guest_session_id')
@@ -2555,13 +3303,11 @@ async function rejectOrder(orderId) {
             .single();
             
         if (checkError) throw checkError;
-        
         if (currentOrder.status === 'rejected') {
             showNotification('Info', 'Order already rejected', 'success');
             return;
         }
         
-        // STEP 2: Update with retry logic
         let retryCount = 0;
         let updatedOrder = null;
         let lastError = null;
@@ -2570,25 +3316,16 @@ async function rejectOrder(orderId) {
             try {
                 const { data, error } = await supabaseClient
                     .from('orders')
-                    .update({ 
-                        status: 'rejected',
-                        inventory_status: 'rejected',
-                        inventory_updated_at: now,
-                        updated_at: now
-                    })
+                    .update({ status: 'rejected', inventory_status: 'rejected', inventory_updated_at: now, updated_at: now })
                     .eq('id', orderId)
                     .select('id, status, customer_email, customer_name, user_id, guest_session_id')
                     .single();
-                
                 if (error) throw error;
                 updatedOrder = data;
-                
             } catch (err) {
                 lastError = err;
                 retryCount++;
-                
                 if ((err.code === '409' || err.code === '23505') && retryCount < 3) {
-                    console.log(`Conflict detected, retrying... (${retryCount}/3)`);
                     await new Promise(r => setTimeout(r, 500 * retryCount));
                 } else {
                     throw err;
@@ -2596,11 +3333,8 @@ async function rejectOrder(orderId) {
             }
         }
         
-        if (!updatedOrder) {
-            throw lastError || new Error('Failed to reject order after retries');
-        }
+        if (!updatedOrder) throw lastError || new Error('Failed to reject order after retries');
         
-        // STEP 3: Send notification - FIXED: use insert() not upsert()
         const notificationData = {
             type: 'rejected',
             title: 'Order Rejected ❌',
@@ -2609,7 +3343,6 @@ async function rejectOrder(orderId) {
             is_read: false,
             created_at: now
         };
-
         if (updatedOrder.customer_email) {
             notificationData.customer_email = updatedOrder.customer_email;
             notificationData.user_email = updatedOrder.customer_email;
@@ -2617,17 +3350,12 @@ async function rejectOrder(orderId) {
         if (updatedOrder.user_id) notificationData.user_id = updatedOrder.user_id;
         if (updatedOrder.guest_session_id) notificationData.guest_session_id = updatedOrder.guest_session_id;
 
-        // FIXED: Simple insert, no onConflict
-        supabaseClient
-            .from('notifications')
-            .insert(notificationData)
-            .then(({ error }) => {
-                if (error) console.log('Notification warning:', error.message);
-            });
+        supabaseClient.from('notifications').insert(notificationData).then(({ error }) => {
+            if (error) console.log('Notification warning:', error.message);
+        });
         
         showNotification('Success', `Order ${orderId} has been REJECTED`, 'success');
         debouncedRefresh();
-        
     } catch (error) {
         console.error('Error rejecting order:', error);
         showNotification('Error', 'Failed to reject order: ' + error.message, 'error');
@@ -2641,10 +3369,7 @@ function viewOrderDetails(orderId) {
     if (!order) return;
     
     const itemsHtml = order.items.map((item) => {
-        const imageUrl = item.image && (item.image.startsWith('http') || item.image.startsWith('data:'))
-            ? item.image 
-            : 'data:image/svg+xml,<svg xmlns=%22http://www.w3.org/2000/svg%22 width=%2260%22 height=%2260%22><rect fill=%22%23f9f5f2%22 width=%2260%22 height=%2260%22/><text fill=%22%236F4D38%22 x=%2230%22 y=%2235%22 font-size=%2220%22 text-anchor=%22middle%22>👕</text></svg>';
-        
+        const imageUrl = item.image && (item.image.startsWith('http') || item.image.startsWith('data:')) ? item.image : 'data:image/svg+xml,<svg xmlns=%22http://www.w3.org/2000/svg%22 width=%2260%22 height=%2260%22><rect fill=%22%23f9f5f2%22 width=%2260%22 height=%2260%22/><text fill=%22%236F4D38%22 x=%2230%22 y=%2235%22 font-size=%2220%22 text-anchor=%22middle%22>👕</text></svg>';
         return `
         <div style="display: flex; gap: 12px; padding: 12px; background: #f8f9fa; border-radius: 8px; margin-bottom: 8px;">
             <img src="${imageUrl}" alt="${item.name}" style="width: 60px; height: 60px; object-fit: cover; border-radius: 6px; border: 1px solid #e0e0e0;" onerror="this.src='data:image/svg+xml,<svg xmlns=%22http://www.w3.org/2000/svg%22 width=%2260%22 height=%2260%22><rect fill=%22%23f9f5f2%22 width=%2260%22 height=%2260%22/><text fill=%22%236F4D38%22 x=%2230%22 y=%2235%22 font-size=%2220%22 text-anchor=%22middle%22>👕</text></svg>'">
@@ -2716,7 +3441,6 @@ function viewOrderDetails(orderId) {
     
     const existingModal = document.getElementById('orderDetailsModal');
     if (existingModal) existingModal.remove();
-    
     document.body.insertAdjacentHTML('beforeend', modalHtml);
     document.body.style.overflow = 'hidden';
 }
@@ -2732,7 +3456,6 @@ function closeOrderDetails() {
 function filterOrders() {
     const search = document.getElementById('orderSearch')?.value.toLowerCase() || '';
     const status = document.getElementById('orderStatusFilter')?.value || '';
-    
     if (!allOrders) return;
     
     const filtered = allOrders.filter(order => {
@@ -2740,12 +3463,9 @@ function filterOrders() {
             order.id.toLowerCase().includes(search) || 
             (order.customer_name && order.customer_name.toLowerCase().includes(search)) ||
             (order.items && order.items.some(item => item.name.toLowerCase().includes(search)));
-        
         const matchesStatus = !status || order.status === status;
-        
         return matchesSearch && matchesStatus;
     });
-    
     displayOrders(filtered);
 }
 
@@ -2759,9 +3479,7 @@ async function loadProducts() {
             .select('*')
             .eq('is_active', true)
             .order('created_at', { ascending: false });
-        
         if (error) throw error;
-        
         products = data || [];
         productsCount = products.length;
         renderProducts();
@@ -2776,17 +3494,13 @@ async function loadProducts() {
 function renderProducts(productsToRender = products.filter(p => p.is_active !== false)) {
     const tbody = document.getElementById('productsTable');
     if (!tbody) return;
-
     if (!productsToRender || productsToRender.length === 0) {
         tbody.innerHTML = '<tr><td colspan="7" class="text-center">No products found</td></tr>';
         return;
     }
     
     tbody.innerHTML = productsToRender.map(product => {
-        const mainImage = product.images && product.images.length > 0 
-            ? product.images[0] 
-            : 'data:image/svg+xml,<svg xmlns="http://www.w3.org/2000/svg" width="100" height="100"><rect fill="%23f9f5f2" width="100" height="100"/><text fill="%236F4D38" x="50" y="55" font-size="30" text-anchor="middle">👕</text></svg>';
-        
+        const mainImage = product.images && product.images.length > 0 ? product.images[0] : 'data:image/svg+xml,<svg xmlns="http://www.w3.org/2000/svg" width="100" height="100"><rect fill="%23f9f5f2" width="100" height="100"/><text fill="%236F4D38" x="50" y="55" font-size="30" text-anchor="middle">👕</text></svg>';
         const status = product.stock === 0 ? 'outstock' : product.stock < 10 ? 'low' : 'instock';
         const statusText = product.stock === 0 ? 'Out of Stock' : product.stock < 10 ? 'Low Stock' : 'In Stock';
         
@@ -2815,19 +3529,16 @@ function renderProducts(productsToRender = products.filter(p => p.is_active !== 
 
 async function renderDashboard() {
     await updateStats();
-    
     try {
         const { data: recentOrders, error } = await supabaseClient
             .from('orders')
             .select('*')
             .order('created_at', { ascending: false })
             .limit(5);
-        
         if (error) throw error;
         
         const tbody = document.getElementById('recentOrdersTable');
         if (!tbody) return;
-        
         if (!recentOrders || recentOrders.length === 0) {
             tbody.innerHTML = '<tr><td colspan="5" class="text-center">No recent orders</td></tr>';
             return;
@@ -2855,7 +3566,6 @@ async function renderDashboard() {
                 </tr>
             `;
         }).join('');
-        
     } catch (error) {
         console.error('Error loading recent orders:', error);
         const tbody = document.getElementById('recentOrdersTable');
@@ -2869,32 +3579,26 @@ async function updateStats() {
             .from('orders')
             .select('status, total_amount')
             .in('status', ['submitted', 'paid', 'processing', 'shipped', 'delivered']);
-        
         if (error) {
             console.error('Stats error:', error);
             return;
         }
-        
         if (orders) {
             const pendingCount = orders.filter(o => o.status === 'submitted').length;
             const totalRevenue = orders
                 .filter(o => o.status === 'paid' || o.status === 'delivered')
                 .reduce((sum, o) => sum + parseFloat(o.total_amount), 0);
-            
             document.getElementById('statOrders').textContent = orders.length;
             document.getElementById('statPending').textContent = pendingCount;
             document.getElementById('statRevenue').textContent = '₦' + totalRevenue.toLocaleString();
         }
-        
         document.getElementById('statProducts').textContent = productsCount || 0;
-        
         const badge = document.getElementById('notificationBadge');
         if (badge && orders) {
             const pendingPayments = orders.filter(o => o.status === 'submitted').length;
             badge.textContent = pendingPayments;
             badge.style.display = pendingPayments > 0 ? 'flex' : 'none';
         }
-        
     } catch (error) {
         console.error('Error updating stats:', error);
     }
@@ -2911,7 +3615,6 @@ async function addProduct() {
         showNotification('Error', 'Please fill in all required fields', 'error');
         return;
     }
-    
     if (selectedImages.length === 0) {
         showNotification('Error', 'Please upload at least one image', 'error');
         return;
@@ -2927,35 +3630,21 @@ async function addProduct() {
             const { data, error } = await supabaseClient.storage
                 .from('product-images')
                 .upload(fileName, file, { cacheControl: '3600', upsert: false });
-            
             if (error) throw error;
-            
-            const { data: { publicUrl } } = supabaseClient.storage
-                .from('product-images')
-                .getPublicUrl(fileName);
-            
+            const { data: { publicUrl } } = supabaseClient.storage.from('product-images').getPublicUrl(fileName);
             imageUrls.push(publicUrl);
         }
         
         const { data, error } = await supabaseClient
             .from('products')
-            .insert({
-                name, category, price, stock, description,
-                sizes: selectedSizes,
-                colors: selectedColors,
-                images: imageUrls,
-                rating: 4.5,
-                reviews: 0
-            })
+            .insert({ name, category, price, stock, description, sizes: selectedSizes, colors: selectedColors, images: imageUrls, rating: 4.5, reviews: 0 })
             .select();
-        
         if (error) throw error;
         
         showNotification('Success', 'Product added successfully', 'success');
         closeModal('addProductModal');
         resetAddForm();
         await loadProducts();
-        
     } catch (error) {
         console.error('Error adding product:', error);
         showNotification('Error', error.message || 'Failed to add product', 'error');
@@ -2968,7 +3657,6 @@ async function addProduct() {
 async function editProduct(id) {
     const product = products.find(p => p.id === id);
     if (!product) return;
-    
     currentEditId = id;
     editExistingImages = [...(product.images || [])];
     editNewImages = [];
@@ -2983,15 +3671,12 @@ async function editProduct(id) {
     document.getElementById('editProductDescription').value = product.description || '';
     
     updateEditExistingPreview();
-    
     document.querySelectorAll('#editSizeOptions .size-option').forEach(el => {
         el.classList.toggle('active', editSelectedSizes.includes(el.dataset.size));
     });
-    
     document.querySelectorAll('#editColorOptions .color-option').forEach(el => {
         el.classList.toggle('active', editSelectedColors.includes(el.dataset.color));
     });
-    
     openModal('editProductModal');
 }
 
@@ -3012,41 +3697,27 @@ async function saveProductEdit() {
     
     try {
         let allImages = [...editExistingImages];
-        
         if (editNewImages.length > 0) {
             for (const file of editNewImages) {
                 const fileName = `${Date.now()}-${file.name.replace(/[^a-zA-Z0-9.]/g, '')}`;
                 const { data, error } = await supabaseClient.storage
                     .from('product-images')
                     .upload(fileName, file, { cacheControl: '3600', upsert: false });
-                
                 if (error) throw error;
-                
-                const { data: { publicUrl } } = supabaseClient.storage
-                    .from('product-images')
-                    .getPublicUrl(fileName);
-                
+                const { data: { publicUrl } } = supabaseClient.storage.from('product-images').getPublicUrl(fileName);
                 allImages.push(publicUrl);
             }
         }
         
         const { error } = await supabaseClient
             .from('products')
-            .update({
-                name, category, price, stock, description,
-                sizes: editSelectedSizes,
-                colors: editSelectedColors,
-                images: allImages,
-                updated_at: new Date().toISOString()
-            })
+            .update({ name, category, price, stock, description, sizes: editSelectedSizes, colors: editSelectedColors, images: allImages, updated_at: new Date().toISOString() })
             .eq('id', currentEditId);
-        
         if (error) throw error;
         
         showNotification('Success', 'Product updated successfully', 'success');
         closeModal('editProductModal');
         await loadProducts();
-        
     } catch (error) {
         console.error('Error updating product:', error);
         showNotification('Error', error.message || 'Failed to update product', 'error');
@@ -3058,16 +3729,10 @@ async function saveProductEdit() {
 
 async function deleteProduct(id) {
     if (!confirm('Are you sure you want to delete this product?')) return;
-    
     showLoading(true);
     try {
-        const { error } = await supabaseClient
-            .from('products')
-            .delete()
-            .eq('id', id);
-        
+        const { error } = await supabaseClient.from('products').delete().eq('id', id);
         if (error) throw error;
-        
         showNotification('Success', 'Product deleted successfully', 'success');
         await loadProducts();
     } catch (error) {
@@ -3080,10 +3745,7 @@ async function deleteProduct(id) {
 
 function filterProducts() {
     const search = document.getElementById('productSearch').value.toLowerCase();
-    const filtered = products.filter(p => 
-        p.name.toLowerCase().includes(search) || 
-        p.category.toLowerCase().includes(search)
-    );
+    const filtered = products.filter(p => p.name.toLowerCase().includes(search) || p.category.toLowerCase().includes(search));
     renderProducts(filtered);
 }
 
@@ -3097,7 +3759,6 @@ function resetAddForm() {
     document.querySelectorAll('#colorOptions .color-option').forEach(el => el.classList.remove('active'));
 }
 
-// UI Helpers
 function openModal(modalId) {
     document.getElementById(modalId).classList.add('active');
     document.body.style.overflow = 'hidden';
@@ -3116,6 +3777,8 @@ function showLoading(show) {
 
 function showNotification(title, message, type) {
     const container = document.getElementById('notificationContainer');
+    if (!container) return;
+    
     const notification = document.createElement('div');
     notification.className = `notification ${type}`;
     
@@ -3130,12 +3793,21 @@ function showNotification(title, message, type) {
             <div class="notification-message">${message}</div>
         </div>
         <button class="notification-close" onclick="this.parentElement.remove()">
-            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="18" y1="6" x2="6" y2="18"></line><line x1="6" y1="6" x2="18" y2="18"></line></svg>
+            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                <line x1="18" y1="6" x2="6" y2="18"></line>
+                <line x1="6" y1="6" x2="18" y2="18"></line>
+            </svg>
         </button>
     `;
     
     container.appendChild(notification);
-    setTimeout(() => notification.remove(), 5000);
+    
+    // Auto-remove after 5 seconds
+    setTimeout(() => {
+        if (notification.parentElement) {
+            notification.remove();
+        }
+    }, 5000);
 }
 
 function formatAdminName(email) {
@@ -3152,11 +3824,26 @@ function formatAdminName(email) {
     return cleanName.split(/\s+/).map(word => word.charAt(0).toUpperCase() + word.slice(1)).join(' ');
 }
 
+
 window.addEventListener('beforeunload', () => {
     if (realtimeSubscription) {
         realtimeSubscription.forEach(sub => supabaseClient.removeChannel(sub));
     }
+    if (customersRealtimeSubscription) {
+        supabaseClient.removeChannel(customersRealtimeSubscription);
+    }
+    // shippingRealtimeSubscription is handled in shipping.js
 });
 </script>
+
+ <script src="shipping.js"></script>
+    
+    <!-- Initialize shipping references after both scripts load -->
+    <script>
+        // Bind shipping module to main dashboard functions
+        if (typeof window.renderShipping === 'function') {
+            console.log('Shipping module loaded successfully');
+        }
+    </script>
 </body>
 </html>
